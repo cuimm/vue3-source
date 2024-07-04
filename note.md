@@ -52,3 +52,40 @@ Vue3 架构
        "@vue/shared": "workspace:^"
     }
     ```
+
+
+Vue3 响应式数据核心
+Vue3 中使用 Proxy来实现响应式数据变化。
+
+CompositionAPI    
+- 简单的组件仍然可以采用 OptionsAPI	(但是在Vue3 中基本不在使用)， compositionAPI在复杂的逻辑中有着明显的优势~
+- CompositionAPI在用户编写复杂业务逻辑不会出现反复横跳问题.CompositionAPI不存在this指向不明确问题
+- Composition API对tree-shaking更加友好，代码也更容易压缩。·CompositionAPI提取公共逻辑非常方便
+- reactivity 模块中就包含了很多我们经常使用到的API例如:computed、 reactive.ref、effect等
+
+打包后文件   
+cjs是commonjs版本的vue，都是完整版的vue，包含运行时和编译器，prod版是压缩版是生产版本
+vue.cjs.js
+vue.cjs.prod.js
+
+
+global全局，可以直接通过script标签来导入，导入js后会增加一个全局的vue对象，vue.global是完整版的vue，包含编译器和运行时。vue.runtime.global是只包含运行时的构建版本
+vue.global.js
+vue.global.prod.js
+vue.runtime.global.js
+vue.runtime.global.prod.js
+
+
+browser版本是浏览器的原生模块化的方式,在浏览器中可以直接使用type="module"的方式直接导入这些模块。vue.esm-browser是完整版包括运行时和编译器，vue.runtime.esm-browser只包含运行时
+vue.esm-browser.js
+vue.esm-browser.prod.js
+vue.runtime.esm-browser.js
+vue.runtime.esm-browser.prod.js
+
+
+bundler没有打包所有代码，配合打包工具来使用，都是用esm模块化方式，内部通过import导入了runtime-core。vue.esm-bundler是完整版的，内部导入了runtime-compiler，使用脚手架创建的项目默认导入的是vue.runtime.esm-bundler，只导入了运行时，是vue的最小版本，在项目开发完毕后只会打包使用到的代码，可以让vue的体积更小
+vue.esm-bundler.js
+vue.runtime.esm-bundler.js
+
+
+

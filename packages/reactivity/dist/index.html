@@ -1,0 +1,47 @@
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport"
+        content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>Document</title>
+</head>
+<body>
+  <div id="app"></div>
+
+  <!-- 官方vue示例 -->
+  <script type="module">
+    import { reactive, effect } from '/node_modules/@vue/reactivity/dist/reactivity.esm-browser.js';
+
+    console.log(reactive({name: 'cuimm'}));
+
+    const state = reactive({ name: 'cuimm', age: 18 }); // 创建响应式对象
+
+    effect(() => {
+      app.innerHTML = `姓名：${state.name} 年龄：${state.age}`;
+    });
+
+    setTimeout(() => {
+      state.age ++;
+    }, 1000);
+
+  </script>
+
+  ----------------------------------------------------------------
+
+  <!--  模拟实现-->
+  <script type="module">
+    import { reactive } from './reactivity.js';
+
+    const obj = { name: 'cuimm', age: 18 };
+
+    const state1 = reactive(obj);
+    const state2 = reactive(obj);
+    const state3 = reactive(state1);
+
+    console.log(state1 === state2); // 同一个对象被多次代理
+    console.log(state1 === state3); // 代理后的对象再次被代理
+
+  </script>
+</body>
+</html>
