@@ -31,7 +31,7 @@
 
   <!--  模拟实现-->
   <script type="module">
-    import { reactive } from './reactivity.js';
+    import { reactive } from '../dist/reactivity.js';
 
     const obj = { name: 'cuimm', age: 18 };
 
@@ -41,6 +41,8 @@
 
     console.log(state1 === state2); // 同一个对象被多次代理
     console.log(state1 === state3); // 代理后的对象再次被代理
+
+    console.log(state1.name, state1.age);
 
   </script>
 </body>
