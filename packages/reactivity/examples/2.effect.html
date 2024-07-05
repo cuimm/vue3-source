@@ -1,0 +1,49 @@
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport"
+        content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>Document</title>
+</head>
+<body>
+<div id="app"></div>
+
+<script type="module">
+  import { effect, reactive } from '../dist/reactivity.js';
+
+  const obj = { name: 'cuimm', age: 18 };
+  const state = reactive(obj);
+
+  effect(() => {
+    app.innerHTML = `姓名：${state.name} 年龄：${state.age}`;
+  });
+
+  setTimeout(() => {
+    state.age++; // state.age 不是在effect中执行的，此处执行不进行依赖收集，但是age变化会触发effect的重新执行
+  });
+
+  /*
+  * effect嵌套：需记录上次执行的effect、或者使用栈实现
+  effect(() => {
+    console.log(state.name);
+
+    effect(() => {
+      console.log(state.name);
+
+      effect(() => {
+        console.log(state.name);
+      });
+    });
+
+    effect(() => {
+      console.log(state.name);
+    });
+
+    console.log(state.age);
+  });
+  */
+
+</script>
+</body>
+</html>

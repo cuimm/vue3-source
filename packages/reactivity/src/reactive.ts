@@ -9,33 +9,37 @@ const reactiveMap = new WeakMap();
 
 /**
  * 创建响应式对象
- * @param target
+ * @param target 目标对象
  */
 function createReactiveObject(target) {
-    // 响应式数据必须是对象
-    if (!isObject(target)) {
-        return target;
-    }
+  // 响应式数据必须是对象
+  if (!isObject(target)) {
+    return target;
+  }
 
-    // 被代理过的proxy对象会有get和set方法，target如果已经被代理过了，会执行get返回true
-    if (target[ReactiveFlags.IS_REACTIVE]) {
-        return target;
-    }
+  // 被代理过的proxy对象会有get和set方法，target如果已经被代理过了，会执行get返回true
+  if (target[ReactiveFlags.IS_REACTIVE]) {
+    return target;
+  }
 
-    // 已经代理过的对象不再重新代理
-    const existProxy = reactiveMap.get(target);
-    if (existProxy) {
-        return existProxy;
-    }
+  // 已经代理过的对象不再重新代理
+  const existProxy = reactiveMap.get(target);
+  if (existProxy) {
+    return existProxy;
+  }
 
-    const proxy = new Proxy(target, mutableHandlers);
+  const proxy = new Proxy(target, mutableHandlers);
 
-    // 缓存代理后的结果
-    reactiveMap.set(target, proxy);
+  // 缓存代理后的结果
+  reactiveMap.set(target, proxy);
 
-    return proxy;
+  return proxy;
 }
 
+/**
+ * 创建响应式对象
+ * @param target 目标对象
+ */
 export function reactive(target) {
-    return createReactiveObject(target);
+  return createReactiveObject(target);
 }
