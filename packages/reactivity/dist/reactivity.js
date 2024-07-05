@@ -5,12 +5,6 @@ function isObject(value) {
 
 // packages/reactivity/src/effect.ts
 var activeEffect;
-function effect(fn, options = {}) {
-  const _effect = new ReactiveEffect(fn, () => {
-    _effect.run();
-  });
-  _effect.run();
-}
 var ReactiveEffect = class {
   /**
    * 构造函数
@@ -20,21 +14,13 @@ var ReactiveEffect = class {
   constructor(fn, scheduler) {
     this.fn = fn;
     this.scheduler = scheduler;
-    /**
-     * 记录当前effect执行的次数
-     */
+    // 记录当前effect执行的次数
     this._trackId = 0;
-    /**
-     * 收集当前effect的deps个数
-     */
+    // 收集当前effect的deps个数
     this._depsLength = 0;
-    /**
-     * 收集当前effect的deps数组
-     */
+    // 收集当前effect的deps数组
     this.deps = [];
-    /**
-     * 当前effect是否为响应式的
-     */
+    // 当前effect是否为响应式的
     this.active = true;
   }
   run() {
@@ -50,9 +36,22 @@ var ReactiveEffect = class {
     }
   }
 };
+function effect(fn, options = {}) {
+  const _effect = new ReactiveEffect(fn, () => {
+    _effect.run();
+  });
+  _effect.run();
+}
 function trackEffect(effect2, dep) {
   dep.set(effect2, effect2._trackId);
   effect2[effect2._depsLength++] = dep;
+}
+function triggerEffects(dep) {
+  for (const effect2 of dep.keys()) {
+    if (effect2.scheduler) {
+      effect2.scheduler();
+    }
+  }
 }
 
 // packages/reactivity/src/reactiveEffect.ts
@@ -81,6 +80,16 @@ function track(target, key) {
     console.log(targetMap);
   }
 }
+function trigger(target, key, newValue, oldValue) {
+  const depMap = targetMap.get(target);
+  if (!depMap) {
+    return;
+  }
+  const dep = depMap.get(key);
+  if (dep) {
+    triggerEffects(dep);
+  }
+}
 
 // packages/reactivity/src/baseHandler.ts
 var mutableHandlers = {
@@ -92,7 +101,12 @@ var mutableHandlers = {
     return Reflect.get(target, key, receiver);
   },
   set(target, key, value, receiver) {
-    return Reflect.set(target, key, value, receiver);
+    const oldValue = target[key];
+    const result = Reflect.set(target, key, value, receiver);
+    if (oldValue !== value) {
+      trigger(target, key, value, oldValue);
+    }
+    return result;
   }
 };
 
@@ -121,6 +135,7 @@ export {
   activeEffect,
   effect,
   reactive,
-  trackEffect
+  trackEffect,
+  triggerEffects
 };
 //# sourceMappingURL=reactivity.js.map

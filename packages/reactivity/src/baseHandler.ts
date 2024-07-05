@@ -1,5 +1,5 @@
 import { ReactiveFlags } from './constants';
-import { track } from './reactiveEffect';
+import { track, trigger } from './reactiveEffect';
 /**
  * ProxyHandler
  */
@@ -16,8 +16,15 @@ export const mutableHandlers: ProxyHandler<any> = {
   },
   set(target, key, value, receiver) {
 
-    // 触发更新 todo...
+    const oldValue = target[key];
 
-    return Reflect.set(target, key, value, receiver);
+    const result = Reflect.set(target, key, value, receiver);
+
+    if (oldValue !== value) {
+      // 新值和老值不一样时，触发依赖更新
+      trigger(target, key, value, oldValue);
+    }
+
+    return result;
   }
 };

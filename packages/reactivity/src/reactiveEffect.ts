@@ -1,4 +1,4 @@
-import { activeEffect, trackEffect } from './effect';
+import { activeEffect, trackEffect, triggerEffects } from './effect';
 
 /**
  * 依赖收集Mapping
@@ -24,7 +24,6 @@ function createDep(clearup, key) {
  */
 export function track(target, key) {
   if (activeEffect) {
-
     /**
      * 构建依赖映射表
      */
@@ -47,6 +46,24 @@ export function track(target, key) {
     trackEffect(activeEffect, dep);
 
     console.log(targetMap);
+  }
+}
+
+/**
+ * 触发依赖更新
+ * @param target 目标对象
+ * @param key 属性key
+ * @param newValue 新值
+ * @param oldValue 老值
+ */
+export function trigger(target, key, newValue, oldValue) {
+  const depMap = targetMap.get(target);
+  if (!depMap) {
+    return;
+  }
+  const dep = depMap.get(key);
+  if (dep) {
+    triggerEffects(dep);
   }
 }
 
