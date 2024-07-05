@@ -19,6 +19,10 @@
     app.innerHTML = `姓名：${state.name} 年龄：${state.age}`;
   });
 
+  effect(() => {
+    app.innerHTML = `姓名2：${state.name}`;
+  });
+
   setTimeout(() => {
     state.age++; // state.age 不是在effect中执行的，此处执行不进行依赖收集，但是age变化会触发effect的重新执行
   });

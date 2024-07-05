@@ -1,5 +1,4 @@
 import { ReactiveFlags } from './constants';
-import { activeEffect } from './effect';
 import { track } from './reactiveEffect';
 /**
  * ProxyHandler

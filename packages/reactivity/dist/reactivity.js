@@ -21,6 +21,18 @@ var ReactiveEffect = class {
     this.fn = fn;
     this.scheduler = scheduler;
     /**
+     * 记录当前effect执行的次数
+     */
+    this._trackId = 0;
+    /**
+     * 收集当前effect的deps个数
+     */
+    this._depsLength = 0;
+    /**
+     * 收集当前effect的deps数组
+     */
+    this.deps = [];
+    /**
      * 当前effect是否为响应式的
      */
     this.active = true;
@@ -38,11 +50,35 @@ var ReactiveEffect = class {
     }
   }
 };
+function trackEffect(effect2, dep) {
+  dep.set(effect2, effect2._trackId);
+  effect2[effect2._depsLength++] = dep;
+}
 
 // packages/reactivity/src/reactiveEffect.ts
+var targetMap = /* @__PURE__ */ new WeakMap();
+function createDep(clearup, key) {
+  const dep = /* @__PURE__ */ new Map();
+  dep.clearup = clearup;
+  dep.key = key;
+  return dep;
+}
 function track(target, key) {
   if (activeEffect) {
-    console.log(target, key);
+    let depsMap = targetMap.get(target);
+    if (!depsMap) {
+      targetMap.set(target, depsMap = /* @__PURE__ */ new Map());
+    }
+    let dep = depsMap.get(key);
+    if (!dep) {
+      depsMap.set(
+        key,
+        dep = createDep(() => depsMap.delete(key), key)
+        // 用于清理target上不需要的属性
+      );
+    }
+    trackEffect(activeEffect, dep);
+    console.log(targetMap);
   }
 }
 
@@ -84,6 +120,7 @@ export {
   ReactiveEffect,
   activeEffect,
   effect,
-  reactive
+  reactive,
+  trackEffect
 };
 //# sourceMappingURL=reactivity.js.map

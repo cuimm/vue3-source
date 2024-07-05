@@ -1,4 +1,21 @@
-import { activeEffect } from './effect';
+import { activeEffect, trackEffect } from './effect';
+
+/**
+ * 依赖收集Mapping
+ */
+const targetMap = new WeakMap();
+
+/**
+ * 创建一个dep，并且在该dep上增加指定属性
+ * @param clearup dep清理逻辑
+ * @param key 此参数仅作调试
+ */
+function createDep(clearup, key) {
+  const dep = new Map() as any;
+  dep.clearup = clearup;
+  dep.key = key;
+  return dep;
+}
 
 /**
  * 依赖收集
@@ -7,6 +24,50 @@ import { activeEffect } from './effect';
  */
 export function track(target, key) {
   if (activeEffect) {
-    console.log(target, key);
+
+    /**
+     * 构建依赖映射表
+     */
+    let depsMap = targetMap.get(target);
+    if (!depsMap) {
+      targetMap.set(target, (depsMap = new Map()));
+    }
+    let dep = depsMap.get(key);
+    if (!dep) {
+      depsMap.set(
+        key,
+        (dep = createDep(() => depsMap.delete(key), key)) // 用于清理target上不需要的属性
+      );
+    }
+
+    /*
+    * 依赖收集
+    * 将当前的effect加入到dep中
+    */
+    trackEffect(activeEffect, dep);
+
+    console.log(targetMap);
   }
 }
+
+/**
+ targetMap[WeakMap]: { targetObj: { 属性prop: { effect, effect, ... } } }
+
+ {
+    { name: 'cuimm', age: 18}: { -- depsMap
+      cuimm: {
+        effect1,
+        effect2,
+        ...
+      },
+      age: {
+        effect1,
+        effect3,
+        ...
+      }
+    },
+    { name: 'cui' }: {
+      'cui': { ... }
+    }
+}
+ */

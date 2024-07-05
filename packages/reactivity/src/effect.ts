@@ -21,6 +21,21 @@ export function effect(fn, options = {}) {
 
 export class ReactiveEffect {
   /**
+   * 记录当前effect执行的次数
+   */
+  _trackId = 0;
+
+  /**
+   * 收集当前effect的deps个数
+   */
+  _depsLength = 0;
+
+  /**
+   * 收集当前effect的deps数组
+   */
+  deps = [];
+
+  /**
    * 当前effect是否为响应式的
    */
   public active = true;
@@ -30,7 +45,9 @@ export class ReactiveEffect {
    * @param fn 用户自定义回调函数
    * @param scheduler
    */
-  constructor(public fn, public scheduler) { }
+  constructor(public fn, public scheduler) {
+    // noop
+  }
 
   run() {
     if (!this.active) {
@@ -48,4 +65,12 @@ export class ReactiveEffect {
     }
   }
 
+}
+
+export function trackEffect(effect, dep) {
+  // dep收集effect
+  dep.set(effect, effect._trackId);
+
+  // effect 和 dep 双向记忆
+  effect[effect._depsLength++] = dep;
 }
