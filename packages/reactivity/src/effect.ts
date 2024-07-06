@@ -70,7 +70,7 @@ export function trackEffect(effect, dep) {
   dep.set(effect, effect._trackId);
 
   // effect 和 dep 双向记忆
-  effect[effect._depsLength++] = dep;
+  effect.deps[effect._depsLength++] = dep;
 }
 
 

@@ -44,7 +44,7 @@ function effect(fn, options = {}) {
 }
 function trackEffect(effect2, dep) {
   dep.set(effect2, effect2._trackId);
-  effect2[effect2._depsLength++] = dep;
+  effect2.deps[effect2._depsLength++] = dep;
 }
 function triggerEffects(dep) {
   for (const effect2 of dep.keys()) {
