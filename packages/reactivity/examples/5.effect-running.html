@@ -1,0 +1,43 @@
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport"
+        content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>防止递归调用</title>
+</head>
+<body>
+  <div id="app"></div>
+  <div id="book"></div>
+  <script type="module">
+    // import { reactive, effect } from '/node_modules/@vue/reactivity/dist/reactivity.esm-browser.js';
+    import { reactive, effect } from '../dist/reactivity.js';
+
+    /**
+     * case 1
+     * 递归调用
+     */
+    const obj = { random: 1, book: { name: '三毛流浪记' } };
+    const state = reactive(obj);
+    effect(() => {
+      app.innerHTML = state.random;
+      state.random = Math.random(); // 如果在执行effect的时候，更新了数据，不能再次触发effect的更新。否则死循环
+    });
+
+    /**
+     * case 2
+     * 嵌套对象
+     */
+    const bookObj = { book: { name: '三毛流浪记' } };
+    const bookState = reactive(bookObj);
+    effect(() => {
+      book.innerHTML = bookState.book.name;
+    })
+    setTimeout(() => {
+      bookState.book.name = '三毛流浪记~~~~~';
+    }, 1000);
+
+  </script>
+
+</body>
+</html>

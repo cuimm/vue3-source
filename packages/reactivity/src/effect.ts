@@ -52,6 +52,9 @@ export class ReactiveEffect {
   // 收集当前effect的deps数组（哪些个属性被当前effect依赖）
   deps = [];
 
+  // 当前effect是否正在运行中
+  _running = 0;
+
   // 当前effect是否为响应式的
   public active = true;
 
@@ -77,8 +80,11 @@ export class ReactiveEffect {
 
       preClearEffect(this); // 每次effect重新执行前，需要将上一次收集的依赖清空
 
+      this._running++;
+
       return this.fn(); // 执行fn会触发依赖收集
     } finally {
+      this._running--;
       postClearEffect(this); // // 每次effect执行后，需要将上一次不需要的依赖清理掉
       activeEffect = lastActiveEffect;
     }
@@ -139,8 +145,10 @@ export function trackEffect(effect, dep) {
  */
 export function triggerEffects(dep) {
   for (const effect of dep.keys()) {
-    if (effect.scheduler) {
-      effect.scheduler();
+    if (!effect._running) { // 正在执行中的effect不再次执行
+      if (effect.scheduler) {
+        effect.scheduler();
+      }
     }
   }
 }

@@ -1,5 +1,7 @@
 import { ReactiveFlags } from './constants';
 import { track, trigger } from './reactiveEffect';
+import { isObject } from '@vue/shared';
+import { reactive } from './reactive';
 /**
  * ProxyHandler
  */
@@ -12,7 +14,13 @@ export const mutableHandlers: ProxyHandler<any> = {
     // 依赖收集
     track(target, key);
 
-    return Reflect.get(target, key, receiver);
+    const result = Reflect.get(target, key, receiver);
+
+    if (isObject(result)) {
+      return reactive(result);
+    }
+
+    return result;
   },
   set(target, key, value, receiver) {
 
