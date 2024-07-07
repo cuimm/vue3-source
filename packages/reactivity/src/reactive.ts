@@ -43,3 +43,11 @@ function createReactiveObject(target) {
 export function reactive(target) {
   return createReactiveObject(target);
 }
+
+/**
+ * 将对象转换为响应式对象，简单类型不做处理
+ * @param value
+ */
+export function toReactive(value) {
+  return isObject(value) ? reactive(value) : value;
+}

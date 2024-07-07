@@ -7,12 +7,12 @@ const targetMap = new WeakMap();
 
 /**
  * 创建一个dep，并且在该dep上增加指定属性
- * @param clearup dep清理逻辑
+ * @param cleanup dep清理逻辑
  * @param key 此参数仅作调试
  */
-function createDep(clearup, key) {
+export function createDep(cleanup, key) {
   const dep = new Map() as any;
-  dep.clearup = clearup;
+  dep.cleanup = cleanup;
   dep.key = key;
   return dep;
 }

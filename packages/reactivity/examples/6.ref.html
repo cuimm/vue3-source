@@ -1,0 +1,38 @@
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport"
+        content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>ref</title>
+</head>
+<body>
+  <div id="app"></div>
+  <div id="app2"></div>
+  <script type="module">
+    // import { effect, ref } from '/node_modules/@vue/reactivity/dist/reactivity.esm-browser.js';
+    import { effect, ref } from '../dist/reactivity.js';
+
+
+    // ref代理简单数据类型
+    const flag = ref(true);
+    effect(() => {
+      app.innerHTML = flag.value;
+    });
+    setTimeout(() => {
+      flag.value = false;
+    }, 1000);
+
+
+    // ref代理对象
+    const obj = { name: 'cuimm', age: 18, flag: true };
+    const objRef = ref(obj);
+    effect(() => {
+      app2.innerHTML = objRef.value.name;
+    });
+    setTimeout(() => {
+      objRef.value.name = 'cui';
+    }, 1000);
+  </script>
+</body>
+</html>

@@ -98,9 +98,9 @@ function triggerEffects(dep) {
 
 // packages/reactivity/src/reactiveEffect.ts
 var targetMap = /* @__PURE__ */ new WeakMap();
-function createDep(clearup, key) {
+function createDep(cleanup, key) {
   const dep = /* @__PURE__ */ new Map();
-  dep.clearup = clearup;
+  dep.cleanup = cleanup;
   dep.key = key;
   return dep;
 }
@@ -175,11 +175,65 @@ function createReactiveObject(target) {
 function reactive(target) {
   return createReactiveObject(target);
 }
+function toReactive(value) {
+  return isObject(value) ? reactive(value) : value;
+}
+
+// packages/reactivity/src/ref.ts
+function ref(value) {
+  return createRef(value);
+}
+function createRef(value) {
+  return new RefImpl(value);
+}
+var RefImpl = class {
+  // 用于收集对应的effect
+  constructor(rawValue) {
+    this.rawValue = rawValue;
+    this.__v_isRef = true;
+    this._value = toReactive(rawValue);
+  }
+  // 属性访问器。访问value时会代理到_value上
+  get value() {
+    trackRefValue(this);
+    return this._value;
+  }
+  set value(newValue) {
+    if (newValue !== this.rawValue) {
+      this.rawValue = newValue;
+      this._value = toReactive(newValue);
+      triggerRefValue(this);
+    }
+  }
+};
+function trackRefValue(ref2) {
+  if (activeEffect) {
+    ref2.dep = ref2.dep || createDep(() => {
+      ref2.dep = void 0;
+    }, "undefined");
+    trackEffect(
+      activeEffect,
+      ref2.dep
+    );
+  }
+}
+function triggerRefValue(ref2) {
+  const dep = ref2.dep;
+  if (dep) {
+    triggerEffects(dep);
+  }
+}
+function isRef(value) {
+  return value && value.__v_isRef === true;
+}
 export {
   ReactiveEffect,
   activeEffect,
   effect,
+  isRef,
   reactive,
+  ref,
+  toReactive,
   trackEffect,
   triggerEffects
 };
