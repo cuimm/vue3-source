@@ -1,0 +1,68 @@
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport"
+        content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>clear effect</title>
+</head>
+<body>
+  <div id="app"></div>
+  <script type="module">
+    // import { reactive, effect } from '/node_modules/@vue/reactivity/dist/reactivity.esm-browser.js';
+    import { reactive, effect } from '../dist/reactivity.js';
+
+    const obj = { name: 'cuimm', age: 18, flag: true, aaa: 100, bbb: 200 };
+    const state = reactive(obj);
+
+
+    /*
+    //----- case 1
+    // flag应该只被收集一次
+    effect(() => {
+      app.innerHTML = state.flag + state.flag + state.flag;
+    });
+
+    setTimeout(() => {
+      state.flag = false;
+    }, 1000);
+    */
+
+    //----- case 2
+    // 当flag为true时，effect应该收集name的依赖
+    // 当flag为false时，effect应该收集age的依赖，不应该再收集name的依赖了
+    effect(() => {
+      console.log('effect run...');
+      app.innerHTML = state.flag ? `姓名：${state.name} aaa: ${state.aaa} bbb：${state.bbb}` : ` 年龄：${state.age}`;
+    });
+
+    /*
+    下面代码执行完毕之后，activeEffect收集的依赖表应该由
+    {
+      obj: {
+        flag: { effect }[dep],
+        name: { effect }[dep],
+      }
+    }
+    更新为
+    {
+      obj: {
+        flag: { effect }[dep],
+        age: { effect }[dep],
+      }
+    }
+    可以通过简易的diff算法进行处理，每次effect重新执行前将上一次的依赖清空。
+    */
+    setTimeout(() => {
+      state.flag = false;
+
+      setTimeout(() => {
+        console.log('修改name属性，不需要再次触发effect的重新执行');
+        state.name = 'cui';
+      }, 1000);
+    }, 1000);
+
+
+  </script>
+</body>
+</html>

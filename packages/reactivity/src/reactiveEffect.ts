@@ -44,8 +44,6 @@ export function track(target, key) {
     * 将当前的effect加入到dep中
     */
     trackEffect(activeEffect, dep);
-
-    console.log(targetMap);
   }
 }
 

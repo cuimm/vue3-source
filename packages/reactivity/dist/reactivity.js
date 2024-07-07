@@ -4,6 +4,24 @@ function isObject(value) {
 }
 
 // packages/reactivity/src/effect.ts
+function cleanDepEffect(dep, effect2) {
+  dep.delete(effect2);
+  if (dep.size === 0) {
+    dep.clearup();
+  }
+}
+function preClearEffect(effect2) {
+  effect2._depsLength = 0;
+  effect2._trackId++;
+}
+function postClearEffect(effect2) {
+  if (effect2.deps.length > effect2._depsLength) {
+    for (let index = effect2._depsLength; index < effect2.deps.length; index++) {
+      cleanDepEffect(effect2.deps[index], effect2);
+    }
+    effect2.deps.length = effect2._depsLength;
+  }
+}
 var activeEffect;
 var ReactiveEffect = class {
   /**
@@ -14,11 +32,11 @@ var ReactiveEffect = class {
   constructor(fn, scheduler) {
     this.fn = fn;
     this.scheduler = scheduler;
-    // 记录当前effect执行的次数
+    // 记录当前effect执行的次数（防止一个属性在当前effect中多次依赖收集）
     this._trackId = 0;
     // 收集当前effect的deps个数
     this._depsLength = 0;
-    // 收集当前effect的deps数组
+    // 收集当前effect的deps数组（哪些个属性被当前effect依赖）
     this.deps = [];
     // 当前effect是否为响应式的
     this.active = true;
@@ -30,8 +48,10 @@ var ReactiveEffect = class {
     const lastActiveEffect = activeEffect;
     try {
       activeEffect = this;
+      preClearEffect(this);
       return this.fn();
     } finally {
+      postClearEffect(this);
       activeEffect = lastActiveEffect;
     }
   }
@@ -43,8 +63,18 @@ function effect(fn, options = {}) {
   _effect.run();
 }
 function trackEffect(effect2, dep) {
-  dep.set(effect2, effect2._trackId);
-  effect2.deps[effect2._depsLength++] = dep;
+  if (dep.get(effect2) !== effect2._trackId) {
+    dep.set(effect2, effect2._trackId);
+    const oldDep = effect2.deps[effect2._depsLength];
+    if (oldDep !== dep) {
+      if (oldDep) {
+        cleanDepEffect(oldDep, effect2);
+      }
+      effect2.deps[effect2._depsLength++] = dep;
+    } else {
+      effect2._depsLength++;
+    }
+  }
 }
 function triggerEffects(dep) {
   for (const effect2 of dep.keys()) {
@@ -77,7 +107,6 @@ function track(target, key) {
       );
     }
     trackEffect(activeEffect, dep);
-    console.log(targetMap);
   }
 }
 function trigger(target, key, newValue, oldValue) {
