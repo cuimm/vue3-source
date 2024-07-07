@@ -111,7 +111,7 @@ export function trackEffect(effect, dep) {
   // 判断当前dep内有没有收集到effect，且_trackId与effect的_trackId相同。
   // _trackId相同代表已经收集过effect，不再进行多次收集。不相同时才进行相互收集。
   if (dep.get(effect) !== effect._trackId) {
-    dep.set(effect, effect._trackId); // dep收集effect
+    dep.set(effect, effect._trackId); // dep收集effect同时更新id
 
     const oldDep = effect.deps[effect._depsLength]; // 获取之前deps内存放的当前下标的dep
     if (oldDep !== dep) {
