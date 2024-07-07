@@ -58,7 +58,7 @@ export class ReactiveEffect {
   /**
    * 构造函数
    * @param fn 用户自定义回调函数
-   * @param scheduler
+   * @param scheduler 用户自定义调度
    */
   constructor(public fn, public scheduler) {
     // noop
@@ -97,8 +97,15 @@ export function effect(fn, options = {}) {
     _effect.run();
   });
 
-  // effect实例创建完毕之后，会立刻执行一次
-  _effect.run();
+  _effect.run(); // effect实例创建完毕之后，会立刻执行一次
+
+  if (options) {
+    Object.assign(_effect, options); // 用用户自定义scheduler等参数覆盖掉内置默认参数
+  }
+
+  const runner = _effect.run.bind(_effect);
+  runner.effect = _effect; // 可以在runner上获取到effect实例
+  return runner; // 返回effect的run方法
 }
 
 

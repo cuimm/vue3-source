@@ -27,7 +27,7 @@ var ReactiveEffect = class {
   /**
    * 构造函数
    * @param fn 用户自定义回调函数
-   * @param scheduler
+   * @param scheduler 用户自定义调度
    */
   constructor(fn, scheduler) {
     this.fn = fn;
@@ -61,6 +61,12 @@ function effect(fn, options = {}) {
     _effect.run();
   });
   _effect.run();
+  if (options) {
+    Object.assign(_effect, options);
+  }
+  const runner = _effect.run.bind(_effect);
+  runner.effect = _effect;
+  return runner;
 }
 function trackEffect(effect2, dep) {
   if (dep.get(effect2) !== effect2._trackId) {

@@ -1,0 +1,38 @@
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport"
+        content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>自定义调度器</title>
+</head>
+<body>
+  <div id="app"></div>
+  <script type="module">
+    // import { reactive, effect } from '/node_modules/@vue/reactivity/dist/reactivity.esm-browser.js';
+
+    import { reactive, effect } from '../dist/reactivity.js';
+
+    const obj = { name: 'cuimm', age: 18, flag: true };
+    const state = reactive(obj);
+
+    const runner = effect(() => {
+      console.log('effect run...');
+      app.innerHTML = state.flag ? `姓名：${state.name}` : ` 年龄：${state.age}`;
+    }, {
+      // 自定义调度器。用户可自己控制如何渲染
+      scheduler: () => {
+        console.log('数据更新不重新渲染，走用户自定义逻辑'); // AOP切片编程
+
+        console.log('runner.effect', runner.effect);
+        runner(); // 用户自定义的重新渲染逻辑
+      }
+    });
+
+    setTimeout(() => {
+      state.flag = false;
+    }, 1000);
+
+  </script>
+</body>
+</html>
