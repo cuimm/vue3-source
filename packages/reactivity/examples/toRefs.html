@@ -1,0 +1,40 @@
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport"
+        content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>toRefs</title>
+</head>
+<body>
+<div id="app"></div>
+<div id="_app"></div>
+<script type="module">
+  import { reactive, toRefs } from '/node_modules/@vue/reactivity/dist/reactivity.esm-browser.js';
+
+  const obj = { name: 'cuimm', age: 18 };
+  const state = reactive(obj);
+
+  const { name, age } = toRefs(obj);
+  const { name: name2, age: age2 } = toRefs(state);
+
+  console.log(name, age);
+  console.log(name2, age2);
+
+</script>
+
+<script type="module">
+  import { reactive, toRefs } from '../dist/reactivity.js';
+
+  const obj = { name: 'cuimm', age: 18 };
+  const state = reactive(obj);
+
+  const { name, age } = toRefs(obj);
+  const { name: name2, age: age2 } = toRefs(state);
+
+  console.log(name, age);
+  console.log(name2, age2);
+
+</script>
+</body>
+</html>

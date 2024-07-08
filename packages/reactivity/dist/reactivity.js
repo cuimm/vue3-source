@@ -4,22 +4,22 @@ function isObject(value) {
 }
 
 // packages/reactivity/src/effect.ts
-function cleanDepEffect(dep, effect2) {
-  dep.delete(effect2);
+function cleanDepEffect(dep, effect3) {
+  dep.delete(effect3);
   if (dep.size === 0) {
     dep.clearup();
   }
 }
-function preClearEffect(effect2) {
-  effect2._depsLength = 0;
-  effect2._trackId++;
+function preClearEffect(effect3) {
+  effect3._depsLength = 0;
+  effect3._trackId++;
 }
-function postClearEffect(effect2) {
-  if (effect2.deps.length > effect2._depsLength) {
-    for (let index = effect2._depsLength; index < effect2.deps.length; index++) {
-      cleanDepEffect(effect2.deps[index], effect2);
+function postClearEffect(effect3) {
+  if (effect3.deps.length > effect3._depsLength) {
+    for (let index = effect3._depsLength; index < effect3.deps.length; index++) {
+      cleanDepEffect(effect3.deps[index], effect3);
     }
-    effect2.deps.length = effect2._depsLength;
+    effect3.deps.length = effect3._depsLength;
   }
 }
 var activeEffect;
@@ -72,25 +72,25 @@ function effect(fn, options = {}) {
   runner.effect = _effect;
   return runner;
 }
-function trackEffect(effect2, dep) {
-  if (dep.get(effect2) !== effect2._trackId) {
-    dep.set(effect2, effect2._trackId);
-    const oldDep = effect2.deps[effect2._depsLength];
+function trackEffect(effect3, dep) {
+  if (dep.get(effect3) !== effect3._trackId) {
+    dep.set(effect3, effect3._trackId);
+    const oldDep = effect3.deps[effect3._depsLength];
     if (oldDep !== dep) {
       if (oldDep) {
-        cleanDepEffect(oldDep, effect2);
+        cleanDepEffect(oldDep, effect3);
       }
-      effect2.deps[effect2._depsLength++] = dep;
+      effect3.deps[effect3._depsLength++] = dep;
     } else {
-      effect2._depsLength++;
+      effect3._depsLength++;
     }
   }
 }
 function triggerEffects(dep) {
-  for (const effect2 of dep.keys()) {
-    if (!effect2._running) {
-      if (effect2.scheduler) {
-        effect2.scheduler();
+  for (const effect3 of dep.keys()) {
+    if (!effect3._running) {
+      if (effect3.scheduler) {
+        effect3.scheduler();
       }
     }
   }
@@ -232,6 +232,13 @@ function toRef(source, key) {
     return ref(source);
   }
 }
+function toRefs(object) {
+  const ret = {};
+  for (let key in object) {
+    ret[key] = propertyToRef(object, key);
+  }
+  return ret;
+}
 function propertyToRef(source, key) {
   const val = source[key];
   if (isRef(val)) {
@@ -264,6 +271,7 @@ export {
   ref,
   toReactive,
   toRef,
+  toRefs,
   trackEffect,
   triggerEffects
 };

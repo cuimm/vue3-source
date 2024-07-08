@@ -1,5 +1,5 @@
 import { toReactive } from './reactive';
-import { activeEffect, trackEffect, triggerEffects } from './effect';
+import { activeEffect, effect, trackEffect, triggerEffects } from './effect';
 import { createDep } from './reactiveEffect';
 import { isObject } from "@vue/shared";
 
@@ -85,6 +85,14 @@ export function toRef(source, key) {
   } else {
     return ref(source);
   }
+}
+
+export function toRefs(object) {
+  const ret = {};
+  for (let key in object) {
+    ret[key] = propertyToRef(object, key);
+  }
+  return ret;
 }
 
 function propertyToRef(source, key) {
