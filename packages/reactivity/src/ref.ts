@@ -25,13 +25,13 @@ class RefImpl {
   public dep; // 用于收集对应的effect
 
   constructor(public rawValue) {
-    this._value = toReactive(rawValue);
+    this._value = toReactive(rawValue); // 如果rawValue是对象类型，那么这个对象会变为响应式对象。这意味着对象的属性可以被追踪，并且这些属性变化时能够自动更新试图。
   }
 
   // 属性访问器。访问value时会代理到_value上
   get value() {
     trackRefValue(this); // 依赖收集
-    return this._value;
+    return this._value; // 针对对象数据类型，此处返回的是该对象的proxy代理（响应式）；简单数据类型直接返回原始值。
   }
 
   set value(newValue) {

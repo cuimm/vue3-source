@@ -25,8 +25,11 @@
 
 
     // ref代理对象
+    // 当ref函数传入对象时，这个对象会被代理成为响应式对象。这意味着对象的属性可以被跟追，并且在这些属性变化时能够自动更新试图。
     const obj = { name: 'cuimm', age: 18, flag: true };
     const objRef = ref(obj);
+    console.log('objRef：', objRef);
+
     effect(() => {
       app2.innerHTML = objRef.value.name;
     });
