@@ -4,22 +4,22 @@ function isObject(value) {
 }
 
 // packages/reactivity/src/effect.ts
-function cleanDepEffect(dep, effect3) {
-  dep.delete(effect3);
+function cleanDepEffect(dep, effect2) {
+  dep.delete(effect2);
   if (dep.size === 0) {
     dep.clearup();
   }
 }
-function preClearEffect(effect3) {
-  effect3._depsLength = 0;
-  effect3._trackId++;
+function preClearEffect(effect2) {
+  effect2._depsLength = 0;
+  effect2._trackId++;
 }
-function postClearEffect(effect3) {
-  if (effect3.deps.length > effect3._depsLength) {
-    for (let index = effect3._depsLength; index < effect3.deps.length; index++) {
-      cleanDepEffect(effect3.deps[index], effect3);
+function postClearEffect(effect2) {
+  if (effect2.deps.length > effect2._depsLength) {
+    for (let index = effect2._depsLength; index < effect2.deps.length; index++) {
+      cleanDepEffect(effect2.deps[index], effect2);
     }
-    effect3.deps.length = effect3._depsLength;
+    effect2.deps.length = effect2._depsLength;
   }
 }
 var activeEffect;
@@ -72,25 +72,25 @@ function effect(fn, options = {}) {
   runner.effect = _effect;
   return runner;
 }
-function trackEffect(effect3, dep) {
-  if (dep.get(effect3) !== effect3._trackId) {
-    dep.set(effect3, effect3._trackId);
-    const oldDep = effect3.deps[effect3._depsLength];
+function trackEffect(effect2, dep) {
+  if (dep.get(effect2) !== effect2._trackId) {
+    dep.set(effect2, effect2._trackId);
+    const oldDep = effect2.deps[effect2._depsLength];
     if (oldDep !== dep) {
       if (oldDep) {
-        cleanDepEffect(oldDep, effect3);
+        cleanDepEffect(oldDep, effect2);
       }
-      effect3.deps[effect3._depsLength++] = dep;
+      effect2.deps[effect2._depsLength++] = dep;
     } else {
-      effect3._depsLength++;
+      effect2._depsLength++;
     }
   }
 }
 function triggerEffects(dep) {
-  for (const effect3 of dep.keys()) {
-    if (!effect3._running) {
-      if (effect3.scheduler) {
-        effect3.scheduler();
+  for (const effect2 of dep.keys()) {
+    if (!effect2._running) {
+      if (effect2.scheduler) {
+        effect2.scheduler();
       }
     }
   }
@@ -178,6 +178,9 @@ function reactive(target) {
 function toReactive(value) {
   return isObject(value) ? reactive(value) : value;
 }
+function isReactive(value) {
+  return !!(value && value["__v_isReactive" /* IS_REACTIVE */]);
+}
 
 // packages/reactivity/src/ref.ts
 function ref(value) {
@@ -262,11 +265,33 @@ var ObjectRefImpl = class {
 function isRef(value) {
   return value && value.__v_isRef === true;
 }
+function proxyRefs(objectWithRef) {
+  if (isReactive(objectWithRef)) {
+    return objectWithRef;
+  }
+  return new Proxy(objectWithRef, {
+    get(target, key, receiver) {
+      const r = Reflect.get(target, key, receiver);
+      return isRef(r) ? r.value : r;
+    },
+    set(target, key, value, receiver) {
+      const oldValue = target[key];
+      if (isRef(oldValue)) {
+        oldValue.value = value;
+        return true;
+      } else {
+        return Reflect.set(target, key, value, receiver);
+      }
+    }
+  });
+}
 export {
   ReactiveEffect,
   activeEffect,
   effect,
+  isReactive,
   isRef,
+  proxyRefs,
   reactive,
   ref,
   toReactive,

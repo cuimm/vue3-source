@@ -51,3 +51,11 @@ export function reactive(target) {
 export function toReactive(value) {
   return isObject(value) ? reactive(value) : value;
 }
+
+/**
+ * 判断是否为响应式对象
+ * @param value
+ */
+export function isReactive(value) {
+  return !!(value && value[ReactiveFlags.IS_REACTIVE]);
+}

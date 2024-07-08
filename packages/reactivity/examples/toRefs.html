@@ -10,7 +10,7 @@
 <div id="app"></div>
 <div id="_app"></div>
 <script type="module">
-  import { reactive, toRefs } from '/node_modules/@vue/reactivity/dist/reactivity.esm-browser.js';
+  import { reactive, toRefs, proxyRefs } from '/node_modules/@vue/reactivity/dist/reactivity.esm-browser.js';
 
   const obj = { name: 'cuimm', age: 18 };
   const state = reactive(obj);
@@ -20,11 +20,16 @@
 
   console.log(name, age);
   console.log(name2, age2);
+
+
+  //--- proxyRefs：模版中取值时可以自动解包
+  const proxy = proxyRefs({...toRefs(state)});
+  console.log('proxyRefs：', proxy.name, proxy.age);
 
 </script>
 
 <script type="module">
-  import { reactive, toRefs } from '../dist/reactivity.js';
+  import { reactive, toRefs, proxyRefs } from '../dist/reactivity.js';
 
   const obj = { name: 'cuimm', age: 18 };
   const state = reactive(obj);
@@ -34,6 +39,10 @@
 
   console.log(name, age);
   console.log(name2, age2);
+
+  //--- proxyRefs：模版中取值时可以自动解包
+  const proxy = proxyRefs({...toRefs(state)});
+  console.log('proxyRefs：', proxy.name, proxy.age);
 
 </script>
 </body>

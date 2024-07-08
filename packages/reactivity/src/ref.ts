@@ -1,5 +1,5 @@
-import { toReactive } from './reactive';
-import { activeEffect, effect, trackEffect, triggerEffects } from './effect';
+import { isReactive, toReactive } from './reactive';
+import { activeEffect, trackEffect, triggerEffects } from './effect';
 import { createDep } from './reactiveEffect';
 import { isObject } from "@vue/shared";
 
@@ -125,4 +125,29 @@ class ObjectRefImpl {
  */
 export function isRef(value) {
   return value && (value.__v_isRef === true);
+}
+
+/**
+ * 返回给定对象的响应式代理。
+ * @param objectWithRef
+ */
+export function proxyRefs(objectWithRef) {
+  if (isReactive(objectWithRef)) {
+    return objectWithRef;
+  }
+  return new Proxy(objectWithRef, {
+    get(target, key, receiver) {
+      const r = Reflect.get(target, key, receiver);
+      return isRef(r) ? r.value : r; // 解包
+    },
+    set(target, key, value, receiver) {
+      const oldValue = target[key];
+      if (isRef(oldValue)) {
+        oldValue.value = value;
+        return true;
+      } else {
+        return Reflect.set(target, key, value, receiver);
+      }
+    }
+  });
 }
