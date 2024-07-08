@@ -1,6 +1,7 @@
 import { toReactive } from './reactive';
 import { activeEffect, trackEffect, triggerEffects } from './effect';
 import { createDep } from './reactiveEffect';
+import { isObject } from "@vue/shared";
 
 /**
  * 把传入的 普通类型值或引用类型对象 统一转换成Proxy对象（{ value: 值 }）
@@ -49,7 +50,9 @@ class RefImpl {
  */
 function trackRefValue(ref) {
   if (activeEffect) {
-    ref.dep = ref.dep || createDep(() => { ref.dep = undefined }, 'undefined');
+    ref.dep = ref.dep || createDep(() => {
+      ref.dep = undefined
+    }, 'undefined');
 
     trackEffect(
       activeEffect,
@@ -67,6 +70,45 @@ function triggerRefValue(ref) {
   if (dep) {
     triggerEffects(dep);
   }
+}
+
+/**
+ * 将目标值转成ref
+ * @param source
+ * @param key
+ */
+export function toRef(source, key) {
+  if (isRef(source)) {
+    return source;
+  } else if (isObject(source) && arguments.length > 1) {
+    return propertyToRef(source, key);
+  } else {
+    return ref(source);
+  }
+}
+
+function propertyToRef(source, key) {
+  const val = source[key];
+  if (isRef(val)) {
+    return val;
+  }
+  return new ObjectRefImpl(source, key);
+}
+
+class ObjectRefImpl {
+  public __v_isRef = true;
+
+  constructor(public _object, public _key) {
+  }
+
+  get value() {
+    return this._object[this._key];
+  }
+
+  set value(newValue) {
+    this._object[this._key] = newValue;
+  }
+
 }
 
 /**

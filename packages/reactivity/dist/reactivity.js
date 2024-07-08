@@ -223,6 +223,35 @@ function triggerRefValue(ref2) {
     triggerEffects(dep);
   }
 }
+function toRef(source, key) {
+  if (isRef(source)) {
+    return source;
+  } else if (isObject(source) && arguments.length > 1) {
+    return propertyToRef(source, key);
+  } else {
+    return ref(source);
+  }
+}
+function propertyToRef(source, key) {
+  const val = source[key];
+  if (isRef(val)) {
+    return val;
+  }
+  return new ObjectRefImpl(source, key);
+}
+var ObjectRefImpl = class {
+  constructor(_object, _key) {
+    this._object = _object;
+    this._key = _key;
+    this.__v_isRef = true;
+  }
+  get value() {
+    return this._object[this._key];
+  }
+  set value(newValue) {
+    this._object[this._key] = newValue;
+  }
+};
 function isRef(value) {
   return value && value.__v_isRef === true;
 }
@@ -234,6 +263,7 @@ export {
   reactive,
   ref,
   toReactive,
+  toRef,
   trackEffect,
   triggerEffects
 };

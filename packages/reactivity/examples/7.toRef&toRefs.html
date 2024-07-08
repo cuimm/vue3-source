@@ -1,0 +1,139 @@
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport"
+        content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>toRef & toRefs</title>
+</head>
+<body>
+<div id="app"></div>
+<div id="app2"></div>
+<div id="app3"></div>
+<div id="app4"></div>
+<div>-------------------</div>
+<div id="_app"></div>
+<div id="_app2"></div>
+<div id="_app3"></div>
+<div id="_app4"></div>
+
+<script type="module">
+  import { reactive, effect, ref, toRef } from '/node_modules/@vue/reactivity/dist/reactivity.esm-browser.js';
+  // import { reactive, ref, toRef } from '../dist/reactivity.js';
+
+  // console.log({ ...reactive(obj) }); // 通过展开运算符直接获取的值，丧失了响应式
+
+
+  //------ toRef(source, key)
+  // source为普通对象，返回 ObjectRefImpl实例。
+  // 此时，数据变化不会引起试图更新，属于非响应式数据。
+  const obj = { name: 'cuimm', age: 18 };
+  const name = toRef(obj, 'name');
+  const age = toRef(obj, 'age');
+
+  console.log(name, age);
+  console.log(name.value, age.value);
+
+  effect(() => {
+    app.innerHTML = name.value + ' ' + age.value;
+  });
+
+  setTimeout(() => {
+    name.value = 'cui';
+  }, 1000);
+
+
+  //---------- toRef(reactiveObject, key)
+  // source 为响应式对象时，数据更新会引起试图变化
+  const obj2 = { name: 'cuimm', age: 18 };
+  const state = reactive(obj2);
+  const obj2ToRef = toRef(state);
+  const age2 = toRef(state, 'age');
+
+  effect(() => {
+    app2.innerHTML = '' + obj2ToRef.value.name + ' ' + obj2ToRef.value.age + ' ' + age2.value + ' ' + state.age;
+  });
+
+  setTimeout(() => {
+    obj2ToRef.value.name = 'cui';
+    age2.value = 20;
+  }, 1000);
+
+
+  //---------- toRef(refObject, key)
+  // 将ref引用规范为ref（按原样返回现有的ref）
+  const objRef = ref({ name: 'cuimm', age: 18 });
+  const objRef2Ref = toRef(objRef);
+
+  effect(() => {
+    app3.innerHTML = objRef2Ref.value.name + ' ' + objRef2Ref.value.age;
+  });
+
+  setTimeout(() => {
+    objRef2Ref.value.name = 'cui';
+    objRef2Ref.value.age = '22';
+  }, 1000);
+
+</script>
+
+<script type="module">
+  import { reactive, ref, toRef, effect } from '../dist/reactivity.js';
+
+  console.log('----------------------------');
+
+  // console.log({ ...reactive(obj) }); // 通过展开运算符直接获取的值，丧失了响应式
+
+
+  //------ toRef(source, key)
+  // source为普通对象，返回 ObjectRefImpl实例。
+  // 此时，数据变化不会引起试图更新，属于非响应式数据。
+  const obj = { name: 'cuimm', age: 18 };
+  const name = toRef(obj, 'name');
+  const age = toRef(obj, 'age');
+
+  console.log(name, age);
+  console.log(name.value, age.value);
+
+  effect(() => {
+    _app.innerHTML = name.value + ' ' + age.value;
+  });
+
+  setTimeout(() => {
+    name.value = 'cui';
+  }, 1000);
+
+
+  //---------- toRef(reactiveObject, key)
+  // source 为响应式对象时，数据更新会引起试图变化
+  const obj2 = { name: 'cuimm', age: 18 };
+  const state = reactive(obj2);
+  const obj2ToRef = toRef(state);
+  const age2 = toRef(state, 'age');
+
+  effect(() => {
+    _app2.innerHTML = '' + obj2ToRef.value.name + ' ' + obj2ToRef.value.age + ' ' + age2.value + ' ' + state.age;
+  });
+
+  setTimeout(() => {
+    obj2ToRef.value.name = 'cui';
+    age2.value = 20;
+  }, 1000);
+
+
+  //---------- toRef(refObject, key)
+  // 将ref引用规范为ref（按原样返回现有的ref）
+  const objRef = ref({ name: 'cuimm', age: 18 });
+  const objRef2Ref = toRef(objRef);
+
+  effect(() => {
+    _app3.innerHTML = objRef2Ref.value.name + ' ' + objRef2Ref.value.age;
+  });
+
+  setTimeout(() => {
+    objRef2Ref.value.name = 'cui';
+    objRef2Ref.value.age = '22';
+  }, 1000);
+
+</script>
+</body>
+</html>
