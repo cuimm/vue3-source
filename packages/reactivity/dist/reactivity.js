@@ -265,25 +265,28 @@ var ObjectRefImpl = class {
 function isRef(value) {
   return value && value.__v_isRef === true;
 }
+function unref(ref2) {
+  return isRef(ref2) ? ref2.value : ref2;
+}
+var shallowUnwrapHandlers = {
+  get(target, key, receiver) {
+    return unref(Reflect.get(target, key, receiver));
+  },
+  set(target, key, value, receiver) {
+    const oldValue = target[key];
+    if (isRef(oldValue) && !isRef(value)) {
+      oldValue.value = value;
+      return true;
+    } else {
+      return Reflect.set(target, key, value, receiver);
+    }
+  }
+};
 function proxyRefs(objectWithRef) {
   if (isReactive(objectWithRef)) {
     return objectWithRef;
   }
-  return new Proxy(objectWithRef, {
-    get(target, key, receiver) {
-      const r = Reflect.get(target, key, receiver);
-      return isRef(r) ? r.value : r;
-    },
-    set(target, key, value, receiver) {
-      const oldValue = target[key];
-      if (isRef(oldValue)) {
-        oldValue.value = value;
-        return true;
-      } else {
-        return Reflect.set(target, key, value, receiver);
-      }
-    }
-  });
+  return new Proxy(objectWithRef, shallowUnwrapHandlers);
 }
 export {
   ReactiveEffect,
@@ -298,6 +301,7 @@ export {
   toRef,
   toRefs,
   trackEffect,
-  triggerEffects
+  triggerEffects,
+  unref
 };
 //# sourceMappingURL=reactivity.js.map

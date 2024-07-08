@@ -2,6 +2,7 @@ import { isReactive, toReactive } from './reactive';
 import { activeEffect, trackEffect, triggerEffects } from './effect';
 import { createDep } from './reactiveEffect';
 import { isObject } from "@vue/shared";
+import { Ref } from "vue";
 
 /**
  * 把传入的 普通类型值或引用类型对象 统一转换成Proxy对象（{ value: 值 }）
@@ -128,6 +129,29 @@ export function isRef(value) {
 }
 
 /**
+ * ref 解包
+ * @param ref
+ */
+export function unref(ref) {
+  return isRef(ref) ? ref.value : ref;
+}
+
+const shallowUnwrapHandlers = {
+  get(target, key, receiver) {
+    return unref(Reflect.get(target, key, receiver));
+  },
+  set(target, key, value, receiver) {
+    const oldValue = target[key];
+    if (isRef(oldValue) && !isRef(value)) {
+      oldValue.value = value;
+      return true;
+    } else {
+      return Reflect.set(target, key, value ,receiver);
+    }
+  },
+};
+
+/**
  * 返回给定对象的响应式代理。
  * @param objectWithRef
  */
@@ -135,19 +159,5 @@ export function proxyRefs(objectWithRef) {
   if (isReactive(objectWithRef)) {
     return objectWithRef;
   }
-  return new Proxy(objectWithRef, {
-    get(target, key, receiver) {
-      const r = Reflect.get(target, key, receiver);
-      return isRef(r) ? r.value : r; // 解包
-    },
-    set(target, key, value, receiver) {
-      const oldValue = target[key];
-      if (isRef(oldValue)) {
-        oldValue.value = value;
-        return true;
-      } else {
-        return Reflect.set(target, key, value, receiver);
-      }
-    }
-  });
+  return new Proxy(objectWithRef, shallowUnwrapHandlers);
 }
