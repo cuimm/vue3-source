@@ -1,0 +1,28 @@
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport"
+        content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>watch effect</title>
+</head>
+<body>
+<script type="module">
+  // import { reactive, ref, watch, watchEffect } from '/node_modules/vue/dist/vue.esm-browser.js';
+  import { reactive, ref, watch, watchEffect } from '../dist/reactivity.js';
+
+
+  const state = reactive({ name: 'cuimm', age: 18 });
+
+  // 默认立马执行一次，依赖的值变化会重新执行
+  // watchEffect自动追踪依赖的值，当依赖的值发生变化时重新执行
+  watchEffect(() => {
+    console.log(`${state.name}同学${state.age}岁`);
+  });
+
+  setTimeout(() => {
+    state.age++;
+  }, 1000);
+</script>
+</body>
+</html>

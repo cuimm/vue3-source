@@ -354,6 +354,9 @@ function computed(getterOrOptions) {
 function watch(source, cb, options) {
   doWatch(source, cb, options);
 }
+function watchEffect(source, options) {
+  doWatch(source, null, options);
+}
 function doWatch(source, cb, { deep, immediate } = {}) {
   const reactiveGetter = (source2) => deep === true ? source2 : traverse(source2, deep === false ? 1 : void 0);
   let getter;
@@ -388,6 +391,8 @@ function doWatch(source, cb, { deep, immediate } = {}) {
       const newValue = effect2.run();
       cb(newValue, oldValue);
       oldValue = newValue;
+    } else {
+      effect2.run();
     }
   };
   const effect2 = new ReactiveEffect(getter, job);
@@ -397,6 +402,8 @@ function doWatch(source, cb, { deep, immediate } = {}) {
     } else {
       oldValue = effect2.run();
     }
+  } else {
+    effect2.run();
   }
 }
 function traverse(value, depth = Infinity, seen) {
@@ -444,6 +451,7 @@ export {
   triggerEffects,
   triggerRefValue,
   unref,
-  watch
+  watch,
+  watchEffect
 };
 //# sourceMappingURL=reactivity.js.map

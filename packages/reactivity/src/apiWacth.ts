@@ -8,6 +8,10 @@ export function watch(source, cb, options?) {
   doWatch(source, cb, options);
 }
 
+export function watchEffect(source, options?) {
+  doWatch(source, null, options);
+}
+
 
 function doWatch(source, cb, { deep, immediate } = {}) {
   // for deep: true：全部遍历
@@ -56,6 +60,8 @@ function doWatch(source, cb, { deep, immediate } = {}) {
       cb(newValue, oldValue);
 
       oldValue = newValue;
+    } else {
+      effect.run(); // watchEffect没有cb回调函数，数据变化后直接run
     }
   };
 
@@ -72,6 +78,8 @@ function doWatch(source, cb, { deep, immediate } = {}) {
     } else {
       oldValue = effect.run();
     }
+  } else {
+    effect.run();
   }
 
 }
