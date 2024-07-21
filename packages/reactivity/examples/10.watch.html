@@ -1,0 +1,56 @@
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport"
+        content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>watch</title>
+</head>
+<body>
+<script type="module">
+  // import { reactive, ref, watch } from '/node_modules/vue/dist/vue.esm-browser.js';
+  import { reactive, ref, watch } from '../dist/reactivity.js';
+
+  /****************** watch reactive *****************/
+  const state = reactive({ name: 'cuimm', age: 18, address: { p: 'sd', p2: { n: 100 } } });
+  watch(state, (newValue, oldValue) => {
+    console.log('state change', newValue === oldValue, newValue, oldValue);
+  }, {
+    // deep: true,
+    immediate: true,
+  });
+
+
+  /****************** watch ref *************************/
+  const num = ref(1);
+
+  watch(num, (val, old) => {
+    console.log('ref change', val, old);
+  });
+
+
+  /****************** watch array *************************/
+  watch([num, state], (val, old) => {
+    console.log('array change', val, old);
+  });
+
+  /****************** watch function **********************/
+  watch(() => state.name, (newValue, oldValue) => {
+    console.log('state.name change', newValue, oldValue);
+  });
+
+
+
+
+  setTimeout(() => {
+    state.name = 'cui';
+    // state.address.p2.n = 'sd2';
+  }, 2000);
+
+  setTimeout(() => {
+    num.value = 2;
+  }, 4000);
+
+</script>
+</body>
+</html>

@@ -9,8 +9,8 @@
   * */
 
 import { NOOP, isFunction, hasChanged } from '@vue/shared';
-import { ReactiveEffect } from './effect';
 import { trackRefValue, triggerRefValue } from './ref';
+import { ReactiveEffect } from './effect';
 
 class ComputedRefImpl {
   private _value;

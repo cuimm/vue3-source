@@ -7,9 +7,15 @@ function isObject(value) {
 function isFunction(value) {
   return typeof value === "function";
 }
+var isArray = Array.isArray;
 function hasChanged(value, oldValue) {
   return !Object.is(value, oldValue);
 }
+var objectToString = Object.prototype.toString;
+var toTypeString = (value) => objectToString.call(value);
+var isPlainObject = (value) => toTypeString(value) === "[object Object]";
+var isMap = (value) => toTypeString(value) === "[object Map]";
+var isSet = (value) => toTypeString(value) === "[object Set]";
 
 // packages/reactivity/src/effect.ts
 function cleanDepEffect(dep, effect2) {
@@ -343,6 +349,83 @@ function computed(getterOrOptions) {
   }
   return new ComputedRefImpl(getter, setter);
 }
+
+// packages/reactivity/src/apiWacth.ts
+function watch(source, cb, options) {
+  doWatch(source, cb, options);
+}
+function doWatch(source, cb, { deep, immediate } = {}) {
+  const reactiveGetter = (source2) => deep === true ? source2 : traverse(source2, deep === false ? 1 : void 0);
+  let getter;
+  if (isRef(source)) {
+    getter = () => source.value;
+  } else if (isReactive(source)) {
+    getter = () => reactiveGetter(source);
+  } else if (isFunction(source)) {
+    getter = source;
+  } else if (isArray(source)) {
+    getter = () => {
+      return source.map((s) => {
+        if (isRef(s)) {
+          return s.value;
+        } else if (isReactive(s)) {
+          return reactiveGetter(s);
+        } else if (isFunction(s)) {
+          return s();
+        }
+      });
+    };
+  } else {
+    getter = NOOP;
+  }
+  if (cb && deep) {
+    const baseGetter = getter;
+    getter = () => traverse(baseGetter());
+  }
+  let oldValue;
+  const job = () => {
+    if (cb) {
+      const newValue = effect2.run();
+      cb(newValue, oldValue);
+      oldValue = newValue;
+    }
+  };
+  const effect2 = new ReactiveEffect(getter, job);
+  if (cb) {
+    if (immediate) {
+      job();
+    } else {
+      oldValue = effect2.run();
+    }
+  }
+}
+function traverse(value, depth = Infinity, seen) {
+  if (!isObject(value) || depth <= 0) {
+    return value;
+  }
+  seen = seen || /* @__PURE__ */ new Set();
+  if (seen.has(value)) {
+    return value;
+  }
+  seen.add(value);
+  depth--;
+  if (isRef(value)) {
+    traverse(value.value, depth, seen);
+  } else if (isArray(value)) {
+    for (let index = 0; index < value.length; index++) {
+      traverse(value[index], depth, seen);
+    }
+  } else if (isSet(value) || isMap(value)) {
+    value.forEach((v) => {
+      traverse(v, depth, seen);
+    });
+  } else if (isPlainObject(value)) {
+    for (const key in value) {
+      traverse(value[key], depth, seen);
+    }
+  }
+  return value;
+}
 export {
   ReactiveEffect,
   activeEffect,
@@ -360,6 +443,7 @@ export {
   trackRefValue,
   triggerEffects,
   triggerRefValue,
-  unref
+  unref,
+  watch
 };
 //# sourceMappingURL=reactivity.js.map

@@ -1,0 +1,115 @@
+import { isArray, isFunction, isMap, isObject, isPlainObject, isSet, NOOP } from '@vue/shared';
+import { isRef } from './ref';
+import { isReactive } from './reactive';
+import { ReactiveEffect } from './effect';
+
+
+export function watch(source, cb, options?) {
+  doWatch(source, cb, options);
+}
+
+
+function doWatch(source, cb, { deep, immediate } = {}) {
+  // for deep: true：全部遍历
+  // for deep: false：仅遍历根级别属性
+  const reactiveGetter = source => deep === true
+    ? source
+    : traverse(source, deep === false ? 1 : undefined);
+
+  // 生成一个可以给ReactiveEffect使用的getter，getter执行时，getter内的响应式数据会收集当前的reactiveEffect
+  let getter: () => any;
+  if (isRef(source)) {
+    getter = () => source.value;
+  } else if (isReactive(source)) {
+    getter = () => reactiveGetter(source);
+  } else if (isFunction((source))) {
+    getter = source;
+  } else if (isArray(source)) {
+    getter = () => {
+      return source.map(s => {
+        if (isRef(s)) {
+          return s.value;
+        } else if (isReactive(s)) {
+          return reactiveGetter(s);
+        } else if (isFunction(s)) {
+          return s();
+        }
+      });
+    };
+  } else {
+    getter = NOOP;
+  }
+
+
+  if (cb && deep) {
+    const baseGetter = getter;
+    getter = () => traverse(baseGetter());
+  }
+
+  let oldValue;
+
+  // scheduler
+  const job = () => {
+    if (cb) {
+      const newValue = effect.run();
+
+      cb(newValue, oldValue);
+
+      oldValue = newValue;
+    }
+  };
+
+  /*
+    该effect执行run的时候，会调用getter方法
+    getter内使用到的响应式属性/ref会收集该effect
+    当这些属性/ref变化的时候会触发scheduler重新执行
+  */
+  const effect = new ReactiveEffect(getter, job);
+
+  if (cb) {
+    if (immediate) {
+      job();
+    } else {
+      oldValue = effect.run();
+    }
+  }
+
+}
+
+/**
+ * 遍历属性值
+ * 只有响应式的对象才可编译
+ * @param value 要遍历的响应式对象
+ * @param depth 非deep:true时为1，仅遍历根节点
+ * @param seen 已经处理过的对象的集合
+ */
+function traverse(value, depth = Infinity, seen?: Set<unknown>) {
+  if (!isObject(value) || depth <= 0) {
+    return value;
+  }
+
+  seen = seen || new Set();
+  if (seen.has(value)) {
+    return value;
+  }
+  seen.add(value);
+  depth--;
+
+  if (isRef(value)) {
+    traverse(value.value, depth, seen);
+  } else if (isArray(value)) {
+    for (let index = 0; index < value.length; index++) {
+      traverse(value[index], depth, seen);
+    }
+  } else if (isSet(value) || isMap(value)) {
+    value.forEach(v => {
+      traverse(v, depth, seen);
+    });
+  } else if (isPlainObject(value)) {
+    for (const key in value) {
+      traverse(value[key], depth, seen);
+    }
+  }
+
+  return value;
+}

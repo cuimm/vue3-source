@@ -1,8 +1,7 @@
+import { isObject } from '@vue/shared';
 import { isReactive, toReactive } from './reactive';
 import { activeEffect, trackEffect, triggerEffects } from './effect';
 import { createDep } from './reactiveEffect';
-import { isObject } from "@vue/shared";
-import { Ref } from "vue";
 
 /**
  * 把传入的 普通类型值或引用类型对象 统一转换成Proxy对象（{ value: 值 }）
@@ -52,7 +51,7 @@ class RefImpl {
 export function trackRefValue(ref) {
   if (activeEffect) {
     ref.dep = ref.dep || createDep(() => {
-      ref.dep = undefined
+      ref.dep = undefined;
     }, 'undefined');
 
     trackEffect(
@@ -146,7 +145,7 @@ const shallowUnwrapHandlers = {
       oldValue.value = value;
       return true;
     } else {
-      return Reflect.set(target, key, value ,receiver);
+      return Reflect.set(target, key, value, receiver);
     }
   },
 };

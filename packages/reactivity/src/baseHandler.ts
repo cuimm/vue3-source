@@ -1,7 +1,8 @@
-import { ReactiveFlags } from './constants';
-import { track, trigger } from './reactiveEffect';
 import { isObject } from '@vue/shared';
+import { ReactiveFlags } from './constants';
 import { reactive } from './reactive';
+import { track, trigger } from './reactiveEffect';
+
 /**
  * ProxyHandler
  */
