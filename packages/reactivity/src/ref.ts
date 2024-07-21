@@ -49,7 +49,7 @@ class RefImpl {
  * 收集ref依赖
  * @param ref
  */
-function trackRefValue(ref) {
+export function trackRefValue(ref) {
   if (activeEffect) {
     ref.dep = ref.dep || createDep(() => {
       ref.dep = undefined
@@ -66,7 +66,7 @@ function trackRefValue(ref) {
  * 触发ref依赖更新
  * @param ref
  */
-function triggerRefValue(ref) {
+export function triggerRefValue(ref) {
   const dep = ref.dep;
   if (dep) {
     triggerEffects(dep);

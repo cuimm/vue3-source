@@ -1,3 +1,6 @@
+import { DirtyLevels } from './constants';
+
+
 /**
  * 清理dep不需要再收集的effect
  * @param dep
@@ -12,6 +15,7 @@ function cleanDepEffect(dep, effect) {
   }
 }
 
+
 /**
  * effect每次重新执行前处理逻辑
  * @param effect
@@ -22,6 +26,7 @@ function preClearEffect(effect) {
   // effect每次重新执行，_trackId+1。（如果同一个effect执行，_trackId是相同的）
   effect._trackId++;
 }
+
 
 /**
  * effect每次执行后的依赖清理逻辑
@@ -37,10 +42,12 @@ function postClearEffect(effect) {
   }
 }
 
+
 /**
  * 当前【激活的/正被执行的】effect
  */
 export let activeEffect;
+
 
 export class ReactiveEffect {
   // 记录当前effect执行的次数（防止一个属性在当前effect中多次依赖收集）
@@ -55,8 +62,19 @@ export class ReactiveEffect {
   // 当前effect是否正在运行中
   _running = 0;
 
+  // 是否为脏值
+  _dirtyLevel = DirtyLevels.Dirty;
+
   // 当前effect是否为响应式的
   public active = true;
+
+  public get dirty() {
+    return this._dirtyLevel === DirtyLevels.Dirty;
+  }
+
+  public set dirty(v) {
+    this._dirtyLevel = v ? DirtyLevels.Dirty: DirtyLevels.NoDirty;
+  }
 
   /**
    * 构造函数
@@ -68,6 +86,8 @@ export class ReactiveEffect {
   }
 
   run() {
+    this._dirtyLevel = DirtyLevels.NoDirty; // 每次运行后effect变为NoDirty
+
     if (!this.active) {
       return this.fn();
     }
@@ -85,7 +105,7 @@ export class ReactiveEffect {
       return this.fn(); // 执行fn会触发依赖收集
     } finally {
       this._running--;
-      postClearEffect(this); // // 每次effect执行后，需要将上一次不需要的依赖清理掉
+      postClearEffect(this); // 每次effect执行后，需要将上一次不需要的依赖清理掉
       activeEffect = lastActiveEffect;
     }
   }
@@ -145,6 +165,11 @@ export function trackEffect(effect, dep) {
  */
 export function triggerEffects(dep) {
   for (const effect of dep.keys()) {
+
+    if (effect._dirtyLevel < DirtyLevels.Dirty) {
+      effect._dirtyLevel = DirtyLevels.Dirty;
+    }
+
     if (!effect._running) { // 正在执行中的effect不再次执行
       if (effect.scheduler) {
         effect.scheduler();

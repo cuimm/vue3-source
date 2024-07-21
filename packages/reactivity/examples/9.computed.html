@@ -1,0 +1,83 @@
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport"
+        content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>计算属性</title>
+</head>
+<body>
+<div id="app"></div>
+<div id="app2"></div>
+<script type="module">
+  // import { reactive,effect, computed } from '/node_modules/@vue/reactivity/dist/reactivity.esm-browser.js';
+  import { reactive, computed, effect } from '../dist/reactivity.js';
+
+  const state = reactive({ name: 'cuimm', age: 18 });
+
+  // computed 执行后的结果是一个不可变的ref
+  const aliceName = computed({
+    get() {
+      console.log('-------------------getter...');
+      return 'Miss ' + state.name; // state.name的dep集合会收集aliceName的计算属性effect，当state.name变化时会触发aliceName的effect重新执行，也就是执行该计算属性的scheduler重新执行，即：执行该计算属性收集的effect全部重新执行。
+    },
+    set(v) {
+      console.log('setter: ', v);
+      state.name = v;
+    }
+  });
+
+  // 计算属性多次取值，只会执行一次
+  console.log('aliceName：', aliceName.value);
+  console.log('aliceName：', aliceName.value);
+  console.log('aliceName：', aliceName.value);
+
+
+  setTimeout(() => {
+    state.name = 'cui';
+    // aliceName.value = 'xxx';
+  }, 1000);
+
+  effect(() => {
+    app.innerHTML = aliceName.value; // 取aliceName.value值时，aliceName会收集当前effect
+    console.log('～～～～', aliceName);
+  });
+
+
+  /*
+  * 实现原理：
+  * 1. 计算属性维护了一个dirty属性，默认为true，也就是脏的。
+  * 运行过一次之后会将dirty变成false，且依赖的值再次变化之后会再将dirty变成true。
+  *
+  * 2. 计算属性也属于一个effect，依赖的属性会收集当前的effect，当依赖的属性值变化后，会让computedEffect里面dirty变为true。
+  *
+  * 3. 计算属性具有依赖收集的能力，可以收集对应的effect，依赖的值发生变化后会触发effect的重新执行。
+  * */
+
+
+  /*
+  计算属性aliasName，计算属性依赖的值name
+  计算属性本身是一个effect，有一个标识dirty = true, 访问的时候会，触发name属性的get方法（依赖收集）
+  将name属性和计算属性做一个映射，稍后name变化后会触发计算属性的scheduler
+  计算属性可能在effect中使用，当取计算属性的时候，会对当前的effect进行依赖收集
+  如果name属性变化了，会通知计算属性将dirty 变为true(触发计算属性收集的effect)
+
+  name 变化  -> 计算属性dirty=true -》 计算属性的scheduler ->触发计算属性收集的effect
+  */
+
+  /*
+  {
+    {name:'cuimm'}:{
+      name:{
+        effect:{计算属性effect}
+      }
+    }
+  }
+  计算属性 = {
+    渲染effect
+  }
+  */
+
+</script>
+</body>
+</html>
