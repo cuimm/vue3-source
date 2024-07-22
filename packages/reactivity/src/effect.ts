@@ -11,7 +11,7 @@ function cleanDepEffect(dep, effect) {
 
   // 如果当前属性的map为空，则删除掉这个属性
   if (dep.size === 0) {
-    dep.clearup();
+    dep.cleanup();
   }
 }
 
@@ -73,7 +73,7 @@ export class ReactiveEffect {
   }
 
   public set dirty(v) {
-    this._dirtyLevel = v ? DirtyLevels.Dirty: DirtyLevels.NoDirty;
+    this._dirtyLevel = v ? DirtyLevels.Dirty : DirtyLevels.NoDirty;
   }
 
   /**
@@ -107,6 +107,14 @@ export class ReactiveEffect {
       this._running--;
       postClearEffect(this); // 每次effect执行后，需要将上一次不需要的依赖清理掉
       activeEffect = lastActiveEffect;
+    }
+  }
+
+  stop() {
+    if (this.active) {
+      this.active = false;
+      preClearEffect(this);
+      postClearEffect(this);
     }
   }
 

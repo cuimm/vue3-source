@@ -21,7 +21,7 @@ var isSet = (value) => toTypeString(value) === "[object Set]";
 function cleanDepEffect(dep, effect2) {
   dep.delete(effect2);
   if (dep.size === 0) {
-    dep.clearup();
+    dep.cleanup();
   }
 }
 function preClearEffect(effect2) {
@@ -80,6 +80,13 @@ var ReactiveEffect = class {
       this._running--;
       postClearEffect(this);
       activeEffect = lastActiveEffect;
+    }
+  }
+  stop() {
+    if (this.active) {
+      this.active = false;
+      preClearEffect(this);
+      postClearEffect(this);
     }
   }
 };
@@ -352,10 +359,10 @@ function computed(getterOrOptions) {
 
 // packages/reactivity/src/apiWacth.ts
 function watch(source, cb, options) {
-  doWatch(source, cb, options);
+  return doWatch(source, cb, options);
 }
 function watchEffect(source, options) {
-  doWatch(source, null, options);
+  return doWatch(source, null, options);
 }
 function doWatch(source, cb, { deep, immediate } = {}) {
   const reactiveGetter = (source2) => deep === true ? source2 : traverse(source2, deep === false ? 1 : void 0);
@@ -415,6 +422,10 @@ function doWatch(source, cb, { deep, immediate } = {}) {
   } else {
     effect2.run();
   }
+  const unwatch = () => {
+    effect2.stop();
+  };
+  return unwatch;
 }
 function traverse(value, depth = Infinity, seen) {
   if (!isObject(value) || depth <= 0) {

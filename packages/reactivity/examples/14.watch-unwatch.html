@@ -1,0 +1,32 @@
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport"
+        content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>unwatch</title>
+</head>
+<body>
+<div id="app"></div>
+<script type="module">
+  // import { reactive, ref, watch, watchEffect } from '/node_modules/vue/dist/vue.esm-browser.js';
+  import { reactive, ref, watch, watchEffect } from '../dist/reactivity.js';
+
+  const number = ref();
+
+  const unwatch = watch(number, (val, old) => {
+    console.log('number change', val, old);
+  }, {
+    flush: 'sync'
+  });
+
+  unwatch();
+
+  setTimeout(() => {
+    number.value = 100;
+    number.value = 200;
+  }, 1000);
+
+</script>
+</body>
+</html>

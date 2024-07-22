@@ -5,11 +5,11 @@ import { ReactiveEffect } from './effect';
 
 
 export function watch(source, cb, options?) {
-  doWatch(source, cb, options);
+  return doWatch(source, cb, options);
 }
 
 export function watchEffect(source, options?) {
-  doWatch(source, null, options);
+  return doWatch(source, null, options);
 }
 
 
@@ -95,6 +95,11 @@ function doWatch(source, cb, { deep, immediate } = {}) {
     effect.run();
   }
 
+  const unwatch = () => {
+    effect.stop();
+  };
+
+  return unwatch; // 返回取消监控方法
 }
 
 /**
