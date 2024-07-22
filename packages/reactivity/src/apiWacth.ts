@@ -52,12 +52,25 @@ function doWatch(source, cb, { deep, immediate } = {}) {
 
   let oldValue;
 
+  // 【闭包】保存上一次的清理函数，在下一次执行watch回调函数时执行上一次的清理逻辑
+  let clean;
+  const onCleanup = fn => {
+    clean = () => {
+      fn();
+      clean = undefined;
+    };
+  };
+
   // scheduler
   const job = () => {
     if (cb) {
       const newValue = effect.run();
 
-      cb(newValue, oldValue);
+      if (clean) {
+        clean(); // 执行回调前，先执行上一次的清理操作进行清理
+      }
+
+      cb(newValue, oldValue, onCleanup);
 
       oldValue = newValue;
     } else {

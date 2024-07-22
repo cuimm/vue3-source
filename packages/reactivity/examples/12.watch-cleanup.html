@@ -1,0 +1,63 @@
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport"
+        content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>Document</title>
+</head>
+<body>
+<div id="app"></div>
+<script type="module">
+  // import { reactive, ref, watch, watchEffect } from '/node_modules/vue/dist/vue.esm-browser.js';
+  import { reactive, ref, watch, watchEffect } from '../dist/reactivity.js';
+
+  /*
+  【watch的清理逻辑onCleanup】
+  利用闭包实现。
+  保存上一次的清理函数，在下一次执行watch回调函数时执行上一次的清理逻辑
+   */
+
+
+  /*
+  * 第一次请求2s后返回，第二次请求1s后返回。预期结果打印第二次请求的返回结果。
+  * */
+
+  function getData(timer) {
+    return new Promise((resolve, reject) => {
+      setTimeout(() => {
+        resolve(timer);
+      }, timer);
+    });
+  }
+
+  const number = ref();
+  let timer = 3000;
+
+  watch(number, async (newValue, oldValue, onCleanup) => {
+    timer -= 1000;
+
+    let flag = true;
+
+    // number第二次变化时，会触发上一次的onCleanup方法执行
+    onCleanup(() => {
+      flag = false;
+    });
+
+    const result = await getData(timer);
+
+    if (flag) {
+      app.innerHTML = result;
+    }
+  }, {
+    flush: 'sync'
+  });
+
+  setTimeout(() => {
+    number.value = 1;
+    number.value = 2;
+  });
+
+</script>
+</body>
+</html>

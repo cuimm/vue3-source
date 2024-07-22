@@ -1,0 +1,85 @@
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport"
+        content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>Document</title>
+</head>
+<body>
+<div id="app"></div>
+<script type="module">
+  import { reactive, ref, watch, watchEffect } from '../dist/reactivity.js';
+
+
+  /*
+  * 第一次请求2s后返回，第二次请求1s后返回。预期结果打印第二次请求的返回结果。
+  * */
+
+  const number = ref();
+
+  function getData(timer) {
+    return new Promise((resolve, reject) => {
+      setTimeout(() => {
+        resolve(timer);
+      }, timer);
+    });
+  }
+
+
+  let timer = 3000;
+  const queue = [];
+  watch(number, async () => {
+    timer -= 1000;
+
+    let flag = true;
+
+    queue.forEach(fn => fn()); // 将前面的多次请求的flag置为false【闭包】
+
+    queue.push(() => {
+      flag = false;
+    });
+
+    const result = await getData(timer);
+
+    console.log(timer, flag);
+
+    if (flag) {
+      app.innerHTML = result;
+    }
+  }, {
+    flush: 'sync'
+  });
+
+  /*
+  let timer = 3000;
+  let queue = [];
+  watch(number, async () => {
+    timer -= 1000;
+
+    let flag = true;
+
+    for (let index = 0; index < queue.length; index++) {
+      queue[index] = false;
+    }
+
+    queue.push(flag);
+
+    const currentIndex = queue.length - 1;
+
+    const result = await getData(timer);
+    console.log(timer, flag);
+    if (queue[currentIndex]) {
+      app.innerHTML = result;
+    }
+  });
+  */
+
+  setTimeout(() => {
+    number.value = 1;
+    number.value = 2;
+  });
+
+</script>
+</body>
+</html>
