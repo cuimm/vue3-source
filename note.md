@@ -88,11 +88,33 @@ vue.esm-bundler.js
 vue.runtime.esm-bundler.js
 
 
+
+
 runtime-dom
 1. 新建 runtime-dom 子项目
 2. 在该项目下执行`pnpm init`初始化该子项目
 3. 修改工作目录下的`package.json`文件，将`dev`命令的目标打包项目更改为`runtime-dom`
 4. 安装依赖：`pnpm install @vue/shared @vue/runtime-core --workspace --filter @vue/runtime-dom`
+
+
+
+
+runtime-core   
+1. @vue/runtime-dom：针对浏览器，提供dom api，基于@vue/runtime-core
+2. @vue/runtime-core：跨平台渲染，依赖@vue/reactivity
+3. @vue/reactivity：实现数据响应式
+ 
+@vue/runtime-dom --依赖--> @vue/runtime-core --依赖--> @vue/reactivity
+
+
+
+
+渲染api
+1. createRenderer：可以允许用户创建自定义渲染器（用户自己可提供渲染方法）
+2. render：用vue内置渲染器进行渲染（渲染dom元素）
+3. h：创建虚拟dom。createElement(type, propsOrChildren, children)
+
+
 
 
 

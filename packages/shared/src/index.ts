@@ -1,3 +1,5 @@
+export * from './shapeFlags';
+
 export const NOOP = () => {
 };
 
