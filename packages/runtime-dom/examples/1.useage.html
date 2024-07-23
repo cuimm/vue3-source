@@ -12,6 +12,7 @@
 <script type="module">
   import { createRenderer, render, h } from '/node_modules/@vue/runtime-dom/dist/runtime-dom.esm-browser.js';
 
+  import { renderOptions } from '../dist/runtime-dom.js';
 
   /*
   *
@@ -32,9 +33,14 @@
   render(vnode, app); // 生成真实节点，并插入到app容器内
 
 
-
   /****************** 2、使用 createRenderer 渲染 ******************/
-  const el = h('h1', 'Hello cuimm'); // 创建虚拟节点
+  const el = h(
+    'h1',
+    { class: 'active', style: { color: 'red' }, a: 'a', onClick: () => alert(100) },
+    'Hello cuimm'
+  ); // 创建虚拟节点
+
+  /*
   const renderer = createRenderer({
     createElement(type) { // 创建 h1 标签
       return document.createElement(type);
@@ -46,6 +52,10 @@
       parent.appendChild(child);
     },
   });
+  */
+
+  const renderer = createRenderer(renderOptions); // 使用自定义渲染器
+
   renderer.render(el, app2);
 
 </script>

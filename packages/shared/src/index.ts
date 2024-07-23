@@ -24,3 +24,10 @@ export const isPlainObject = value => toTypeString(value) === '[object Object]';
 export const isMap = value => toTypeString(value) === '[object Map]';
 
 export const isSet = value => toTypeString(value) === '[object Set]';
+
+export const isOn = key => {
+  return key.charCodeAt(0) === 111 /* o */
+  && key.charCodeAt(1) === 110 /* n */
+  && (key.charCodeAt(2) > 122 || key.charCodeAt(2) < 97); // uppercase letter
+};
+
