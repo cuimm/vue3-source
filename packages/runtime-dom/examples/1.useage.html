@@ -1,0 +1,53 @@
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport"
+        content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>runtime-dom</title>
+</head>
+<body>
+<div id="app"></div>
+<div id="app2"></div>
+<script type="module">
+  import { createRenderer, render, h } from '/node_modules/@vue/runtime-dom/dist/runtime-dom.esm-browser.js';
+
+
+  /*
+  *
+  * @vue/runtime-dom：针对浏览器，提供dom api，基于@vue/runtime-core
+  * @vue/runtime-core：跨平台渲染，依赖@vue/reactivity
+  * @vue/reactivity：实现数据响应式
+  *
+  * @vue/runtime-dom -> @vue/runtime-core -> @vue/reactivity
+  *
+  * 1. createRenderer：可以允许用户创建自定义渲染器（用户自己可提供渲染方法）
+  * 2. render：用vue内置渲染器进行渲染（渲染dom元素）
+  * 3. h：创建虚拟dom。createElement(type, propsOrChildren, children)
+  * */
+
+  /****************** 1、使用 render 方法直接渲染 ******************/
+  console.log(createRenderer, render, h);
+  const vnode = h('h1', 'Hello cuimm'); // 创建虚拟节点
+  render(vnode, app); // 生成真实节点，并插入到app容器内
+
+
+
+  /****************** 2、使用 createRenderer 渲染 ******************/
+  const el = h('h1', 'Hello cuimm'); // 创建虚拟节点
+  const renderer = createRenderer({
+    createElement(type) { // 创建 h1 标签
+      return document.createElement(type);
+    },
+    setElementText(el, text) { // 给 h1 标签设置文本节点
+      el.textContent = text;
+    },
+    insert(child, parent) { // 将h1插入到父容器内
+      parent.appendChild(child);
+    },
+  });
+  renderer.render(el, app2);
+
+</script>
+</body>
+</html>
