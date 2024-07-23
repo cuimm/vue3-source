@@ -88,4 +88,11 @@ vue.esm-bundler.js
 vue.runtime.esm-bundler.js
 
 
+runtime-dom
+1. 新建 runtime-dom 子项目
+2. 在该项目下执行`pnpm init`初始化该子项目
+3. 修改工作目录下的`package.json`文件，将`dev`命令的目标打包项目更改为`runtime-dom`
+4. 安装依赖：`pnpm install @vue/shared @vue/reactivity --workspace --filter @vue/runtime-dom`
+
+
 
