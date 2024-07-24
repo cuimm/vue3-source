@@ -1,0 +1,43 @@
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport"
+        content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>Document</title>
+</head>
+<body>
+<div id="app"></div>
+<script type="module">
+  // import { createRenderer, render, h } from '/node_modules/@vue/runtime-dom/dist/runtime-dom.esm-browser.js';
+  import { render, h } from '../dist/runtime-dom.js';
+
+  render(h('h1', 'hello'), app);
+
+  /*
+  // vNode传递null时 => 销毁dom元素
+  setTimeout(() => {
+    render(null, app);
+  }, 3000);
+  */
+
+  // 两个节点之间diff
+  // 首先看两个元素是否是同一个元素，如果是则可以复用。如果不是则需要删除老的元素重新渲染新的。
+  const vnode1 = h(
+    'h1',
+    { key: 1, style: { color: 'red', backgroundColor: 'yellow' } },
+    'hello'
+  );
+  const vnode2 = h('h1',
+    { key: 2, style: { color: 'green' } },
+    'world'
+  );
+
+  render(vnode1, app);
+  setTimeout(() => {
+    render(vnode2, app);
+  }, 3000);
+
+</script>
+</body>
+</html>
