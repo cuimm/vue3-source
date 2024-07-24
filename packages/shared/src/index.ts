@@ -3,6 +3,10 @@ export * from './shapeFlags';
 export const NOOP = () => {
 };
 
+export function isString(value) {
+  return typeof value === 'string';
+}
+
 export function isObject(value) {
   return value !== null && typeof value === 'object';
 }

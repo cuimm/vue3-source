@@ -1,0 +1,93 @@
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport"
+        content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>h</title>
+</head>
+<body>
+<div id="app"></div>
+<script type="module">
+  // import { createRenderer, render, h } from '/node_modules/@vue/runtime-dom/dist/runtime-dom.esm-browser.js';
+  import { h, render } from '../dist/runtime-dom.js';
+
+  /**
+   方法定义：
+   h(type, propsOrChildren?, children?)
+
+   参数个数不固定：
+   1. 1个参数：
+   h(类型)
+
+   2. 2个参数：
+   h(类型, 属性)
+   h(类型, 数组)
+   h(类型, 文本)
+   h(类型, 虚拟节点)
+   h(类型, slot)
+
+   3. 3个参数：
+   h(类型, 属性, 数组)
+   h(类型, 属性, 文本)
+   h(类型, 属性, 虚拟节点)
+   h(类型, 属性, slot)
+
+   4. 3个以上参数
+   h(类型, 属性, 儿子节点...)
+
+
+   1. type only
+   h('div')
+
+   2. type + props
+   h('div', { backgroundColor: 'red' })
+
+   3. type + omit props + children
+   省略props不支持具名插槽
+   h('div', [])  // array
+   h('div', 'foo')  // text
+   h('div', h('br'))  // vnode
+   h(Component, () => {})  // default slot
+
+   4. type + props + children
+   h('div', {}, []) // array
+   h('div', {}, 'foo') // text
+   h('div', {}, h('br')) // vnode
+   h(Component, (), () => {}) // default slot
+   h(Component, {}, {})  // named slots
+
+   没有props的具名插槽需要显式的“null”以避免歧义
+   h(Component, null, {})
+
+
+   属性和虚拟节点都是对象，带有__v_isVNode属性值的才是虚拟节点
+   */
+
+
+    // console.log(h('div'));
+    //
+    // console.log(h('div', { backgroundColor: 'red' }));
+    // console.log(h('div', []));
+    //
+    // console.log(h('div', 'foo'));
+    // console.log(h('div', h('br')));
+    //
+    // console.log(h('div', {}, []));
+    // console.log(h('div', {}, 'foo'));
+    // console.log(h('div', {}, h('br')));
+
+
+  const vNode = h(
+      'div',
+      [
+        h('div', { style: { color: 'red' } }, 100),
+        h('div', 200)
+      ]
+    );
+
+  render(vNode, app);
+
+</script>
+</body>
+</html>
