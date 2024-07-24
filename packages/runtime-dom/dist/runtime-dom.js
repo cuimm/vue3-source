@@ -612,7 +612,7 @@ function createRenderer(renderOptions2) {
   };
 }
 
-// packages/runtime-core/src/createVnode.ts
+// packages/runtime-core/src/vnode.ts
 function isVNode(value) {
   return value ? value.__v_isVNode === true : false;
 }
