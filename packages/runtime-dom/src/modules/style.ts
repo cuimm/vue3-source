@@ -14,7 +14,7 @@ export default function patchStyle(el, prevValue, nextValue) {
 
   // diff之前的样式
   for (const key in prevValue) {
-    if (nextValue[key] === null) {
+    if (nextValue && (nextValue[key] === null || nextValue[key] === undefined)) {
       style[key] = null;
     }
   }

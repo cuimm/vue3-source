@@ -75,6 +75,63 @@ export function createRenderer(renderOptions) {
   };
 
   /**
+   * 卸载子节点
+   * @param children
+   */
+  const unmountChildren = children => {
+    for (let index = 0; index < children.length; index++) {
+      unmount(children[index]);
+    }
+  };
+
+  /**
+   * 比对儿子节点
+   * @param n1
+   * @param n2
+   * @param el
+   */
+  const patchChildren = (n1, n2, el) => {
+    const c1 = n1.children;
+    const c2 = n2.children;
+
+    const prevShapeFlag = n1.shapeFlag;
+    const shapeFlag = n2.shapeFlag;
+
+    // children has 3 possibilities: text, array or no children.
+    // 1.新的是文本，老的是数组移除老的；
+    // 2.新的是文本，老的也是文本，内容不相同替换
+    // 3.老的是数组，新的是数组，全量 diff 算法
+    // 4.老的是数组，新的不是数组，移除老的子节点
+    // 5.老的是文本，新的是空
+    // 6.老的是文本，新的是数组
+    if (shapeFlag & ShapeFlags.TEXT_CHILDREN) {
+      if (prevShapeFlag & ShapeFlags.ARRAY_CHILDREN) { // prev children was array  &  new children is text
+        unmountChildren(c1);
+      }
+      if (c1 !== c2) {
+        hostSetElementText(el, c2); // prev children was text/null  &  new children is text
+      }
+    } else {
+      if (prevShapeFlag & ShapeFlags.ARRAY_CHILDREN) {
+        if (shapeFlag & ShapeFlags.ARRAY_CHILDREN) { // prev children was array  &  new children is array
+          // todo...
+        } else { // prev children was array  &  new children has no children
+          unmountChildren(c1);
+        }
+      } else {
+        // prev children was text OR null
+        // new children is array OR null
+        if (prevShapeFlag & ShapeFlags.TEXT_CHILDREN) { // prev children was text  &  new children is array/null
+          hostSetElementText(el, '');
+        }
+        if (shapeFlag & ShapeFlags.ARRAY_CHILDREN) { // prev children has no children
+          mountChildren(c2, el);
+        }
+      }
+    }
+  };
+
+  /**
    * n1和n2是相同节点，dom元素可复用
    * 比对属性和元素的子节点
    * @param n1
@@ -87,7 +144,9 @@ export function createRenderer(renderOptions) {
     const oldProps = n1.props || {};
     const newProps = n2.props || {};
 
-    patchProps(oldProps, newProps, el);
+    patchProps(oldProps, newProps, el); // 比对属性
+
+    patchChildren(n1, n2, el); // 比对儿子节点
   };
 
   /**
