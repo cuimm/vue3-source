@@ -32,6 +32,9 @@ var nodeOps = {
 // packages/shared/src/index.ts
 var NOOP = () => {
 };
+function isUndefined(value) {
+  return value === void 0;
+}
 function isString(value) {
   return typeof value === "string";
 }
@@ -611,7 +614,7 @@ function createRenderer(renderOptions2) {
       patch(null, children[index], container);
     }
   };
-  const mountElement = (vnode, container) => {
+  const mountElement = (vnode, container, anchor) => {
     const { type, props, shapeFlag, children } = vnode;
     const el = vnode.el = hostCreateElement(type);
     if (props) {
@@ -624,7 +627,7 @@ function createRenderer(renderOptions2) {
     } else if (shapeFlag & 16 /* ARRAY_CHILDREN */) {
       mountChildren(children, el);
     }
-    hostInsert(el, container);
+    hostInsert(el, container, anchor);
   };
   const patchProps = (oldProps, newProps, el) => {
     for (const key in newProps) {
@@ -639,6 +642,77 @@ function createRenderer(renderOptions2) {
   const unmountChildren = (children) => {
     for (let index = 0; index < children.length; index++) {
       unmount(children[index]);
+    }
+  };
+  const patchKeyedChildren = (c1, c2, el) => {
+    let i = 0;
+    let e1 = c1.length - 1;
+    let e2 = c2.length - 1;
+    while (i <= e1 && i <= e2) {
+      const n1 = c1[i];
+      const n2 = c2[i];
+      if (isSameVNode(n1, n2)) {
+        patch(n1, n2, el);
+      } else {
+        break;
+      }
+      i++;
+    }
+    while (e1 >= i && e2 >= i) {
+      const n1 = c1[e1];
+      const n2 = c2[e2];
+      if (isSameVNode(n1, n2)) {
+        patch(n1, n2, el);
+      } else {
+        break;
+      }
+      e1--;
+      e2--;
+    }
+    if (i > e1) {
+      if (i <= e2) {
+        const nextPos = e2 + 1;
+        const anchor = c2[nextPos]?.el;
+        while (i <= e2) {
+          patch(null, c2[i], el, anchor);
+          i++;
+        }
+      }
+    } else if (i > e2) {
+      if (i <= e1) {
+        while (i <= e1) {
+          unmount(c1[i]);
+          i++;
+        }
+      }
+    } else {
+      const s1 = i;
+      const s2 = i;
+      const keyToNewIndexMap = /* @__PURE__ */ new Map();
+      for (let index = s2; index <= e2; index++) {
+        const vnode = c2[index];
+        keyToNewIndexMap.set(vnode.key, index);
+      }
+      for (let index = s1; index <= e1; index++) {
+        const vnode = c1[index];
+        const newIndex = keyToNewIndexMap.get(vnode.key);
+        if (isUndefined(newIndex)) {
+          unmount(vnode);
+        } else {
+          patch(vnode, c2[newIndex], el);
+        }
+      }
+      const toBePatched = e2 - s2 + 1;
+      for (let index = toBePatched - 1; index >= 0; index--) {
+        const newIndex = s2 + index;
+        const anchor = c2[newIndex + 1]?.el;
+        const vnode = c2[newIndex];
+        if (vnode.el) {
+          hostInsert(vnode.el, el, anchor);
+        } else {
+          patch(null, vnode, el, anchor);
+        }
+      }
     }
   };
   const patchChildren = (n1, n2, el) => {
@@ -656,6 +730,7 @@ function createRenderer(renderOptions2) {
     } else {
       if (prevShapeFlag & 16 /* ARRAY_CHILDREN */) {
         if (shapeFlag & 16 /* ARRAY_CHILDREN */) {
+          patchKeyedChildren(c1, c2, el);
         } else {
           unmountChildren(c1);
         }
@@ -676,14 +751,14 @@ function createRenderer(renderOptions2) {
     patchProps(oldProps, newProps, el);
     patchChildren(n1, n2, el);
   };
-  const processElement = (n1, n2, container) => {
+  const processElement = (n1, n2, container, anchor) => {
     if (n1 === null) {
-      mountElement(n2, container);
+      mountElement(n2, container, anchor);
     } else {
       patchElement(n1, n2, container);
     }
   };
-  const patch = (n1, n2, container) => {
+  const patch = (n1, n2, container, anchor = null) => {
     if (n1 === n2) {
       return;
     }
@@ -691,7 +766,7 @@ function createRenderer(renderOptions2) {
       unmount(n1);
       n1 = null;
     }
-    processElement(n1, n2, container);
+    processElement(n1, n2, container, anchor);
   };
   const unmount = (vnode) => {
     hostRemove(vnode.el);

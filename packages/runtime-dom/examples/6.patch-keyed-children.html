@@ -1,0 +1,185 @@
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport"
+        content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>patchKeyedChildren</title>
+</head>
+<body>
+<div id="app"></div>
+<script type="module">
+  // import { createRenderer, render, h } from '/node_modules/@vue/runtime-dom/dist/runtime-dom.esm-browser.js';
+  import { render, h } from '../dist/runtime-dom.js';
+
+  // 先从前后对比对，再依次从后往前比对，找到不一致的范围
+
+
+  /************************* case 1：sync from start. 从前往后比对 [a,b,c] => [a,b,d,e] ****************************/
+  /*
+  // 从前往后比对：比对完毕之后，i、e1、e2值分别为：2、2、3
+  const n1 = h('ul', {}, [
+    h('li', { key: 'a' }, 'a'),
+    h('li', { key: 'b' }, 'b'),
+    h('li', { key: 'c' }, 'c'),
+  ]);
+
+  const n2 = h('ul', {}, [
+    h('li', { key: 'a', style: { color: 'red' } }, 'a'),
+    h('li', { key: 'b' }, 'b'),
+    h('li', { key: 'd' }, 'd'),
+    h('li', { key: 'e' }, 'e'),
+  ]);
+
+  render(n1, app);
+  setTimeout(() => {
+    render(n2, app);
+  }, 3000);
+  */
+
+
+  /************************* case 2：sync from end. 从后往前比对 [a,b,c] => [d,e,b,c] ****************************/
+  /*
+  // 从后往前比对：比对完毕之后，i、e1、e2值分别为：0、0、1
+  const n1 = h('ul', {}, [
+    h('li', { key: 'a' }, 'a'),
+    h('li', { key: 'b' }, 'b'),
+    h('li', { key: 'c' }, 'c'),
+  ]);
+
+  const n2 = h('ul', {}, [
+    h('li', { key: 'd' }, 'd'),
+    h('li', { key: 'e' }, 'e'),
+    h('li', { key: 'b', style: { color: 'red' } }, 'b'),
+    h('li', { key: 'c' }, 'c'),
+  ]);
+
+  render(n1, app);
+  setTimeout(() => {
+    render(n2, app);
+  }, 3000);
+   */
+
+
+  /************************* case 3：common sequence + mount. 有新增节点 [a,b] => [a,b,c] ****************************/
+  // 前后依次比对完之后，i、e1、e2值分别为：2、1、2  ==> 【 i > e1 】
+  /*
+  const n1 = h('ul', {}, [
+    h('li', { key: 'a' }, 'a'),
+    h('li', { key: 'b' }, 'b'),
+  ]);
+
+  const n2 = h('ul', {}, [
+    h('li', { key: 'a' }, 'a'),
+    h('li', { key: 'b' }, 'b'),
+    h('li', { key: 'c', style: { color: 'red' } }, 'c'),
+  ]);
+
+  render(n1, app);
+  setTimeout(() => {
+    render(n2, app);
+  }, 3000);
+   */
+
+
+  /************************* case 3：common sequence + mount. 有新增节点 [a,b] => [c, a,b] ****************************/
+  // 前后依次比对完之后，i、e1、e2值分别为：0、-1、0  ==> 【 i <= e2 】
+  /*
+  const n1 = h('ul', {}, [
+      h('li', { key: 'a' }, 'a'),
+      h('li', { key: 'b' }, 'b'),
+    ]);
+
+  const n2 = h('ul', {}, [
+    h('li', { key: 'c', style: { color: 'red' } }, 'c'),
+    h('li', { key: 'a' }, 'a'),
+    h('li', { key: 'b' }, 'b'),
+  ]);
+
+  render(n1, app);
+  setTimeout(() => {
+    render(n2, app);
+  }, 3000);
+ */
+
+
+  /*
+    case 3 可得出结论：
+    i > e1 && i <= e2 时，有新增节点
+  * */
+
+
+  /************************* case 4：common sequence + unmount. 有卸载节点 (a b) c => (a b) ****************************/
+  // 前后依次比对完之后，i、e1、e2值分别为：2、2、1  ==> 【 i > e2 】【减少的部分为 i-e1之间部分.】
+  /*
+  const n1 = h('ul', {}, [
+    h('li', 'a'),
+    h('li', 'b'),
+    h('li', 'c'),
+  ]);
+
+  const n2 = h('ul', {}, [
+    h('li', 'a'),
+    h('li', 'b'),
+  ]);
+
+  render(n1, app);
+  setTimeout(() => {
+    render(n2, app);
+  }, 3000);
+  */
+
+
+  /************************* case 4：common sequence + unmount. 有卸载节点 a (b c) => (b c) ****************************/
+  // 前后依次比对完之后，i、e1、e2值分别为：0、0、-1  ==> 【 i > e2 】【减少的部分为 i-e1之间部分.】
+  /*
+  const n1 = h('ul', {}, [
+      h('li', { key: 'a' }, 'a'),
+      h('li', { key: 'b' }, 'b'),
+      h('li', { key: 'c' }, 'c'),
+    ]);
+
+  const n2 = h('ul', {}, [
+    h('li', { key: 'b' }, 'b'),
+    h('li', { key: 'c' }, 'c'),
+  ]);
+
+  render(n1, app);
+  setTimeout(() => {
+    render(n2, app);
+  }, 3000);
+   */
+
+
+  /************************* case 5：unknown sequence. ****************************/
+  // 前后依次比对完之后，i、e1、e2值分别为：2、4、5
+  const n1 = h('ul', {}, [
+    h('li', { key: 'a' }, 'a'),
+    h('li', { key: 'b' }, 'b'),
+    h('li', { key: 'c' }, 'c'),
+    h('li', { key: 'd' }, 'd'),
+    h('li', { key: 'e' }, 'e'),
+    h('li', { key: 'x', style: { color: 'red' } }, 'x 移除'),
+    h('li', { key: 'f' }, 'f'),
+    h('li', { key: 'g' }, 'g'),
+  ]);
+
+  const n2 = h('ul', {}, [
+    h('li', { key: 'a' }, 'a'),
+    h('li', { key: 'b' }, 'b'),
+    h('li', { key: 'e' }, 'e'),
+    h('li', { key: 'd' }, 'd'),
+    h('li', { key: 'c' }, 'c'),
+    h('li', { key: 'h', style: { color: 'green' } }, 'h 新增'),
+    h('li', { key: 'f' }, 'f'),
+    h('li', { key: 'g' }, 'g'),
+  ]);
+
+  render(n1, app);
+  setTimeout(() => {
+    render(n2, app);
+  }, 3000);
+
+</script>
+</body>
+</html>

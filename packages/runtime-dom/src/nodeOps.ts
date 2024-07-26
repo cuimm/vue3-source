@@ -3,7 +3,7 @@
  */
 export const nodeOps = {
   insert: (child, parent, anchor) => {
-    parent.insertBefore(child, anchor || null); // anchor 为null时，insertBefore === appendChild
+    parent.insertBefore(child, anchor || null); // anchor 为null时，insertBefore === appendChild；anchor不为null时，插入到anchor之前
   },
   remove: (child) => {
     const parent = child.parentNode;

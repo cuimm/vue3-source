@@ -1,4 +1,4 @@
-import { ShapeFlags } from '@vue/shared';
+import { isUndefined, ShapeFlags } from '@vue/shared';
 import { isSameVNode } from './vnode';
 
 export function createRenderer(renderOptions) {
@@ -30,7 +30,7 @@ export function createRenderer(renderOptions) {
    * @param vnode
    * @param container
    */
-  const mountElement = (vnode, container) => {
+  const mountElement = (vnode, container, anchor) => {
     const { type, props, shapeFlag, children } = vnode;
 
     // 让虚拟节点和真实的dom节点创建关联。
@@ -51,7 +51,7 @@ export function createRenderer(renderOptions) {
       mountChildren(children, el); // 儿子节点是数组
     }
 
-    hostInsert(el, container);
+    hostInsert(el, container, anchor);
   };
 
   /**
@@ -85,6 +85,119 @@ export function createRenderer(renderOptions) {
   };
 
   /**
+   * 比较两个儿子的差异
+   *
+   * 先依次从前往后比对，再依次从后往前比对，找到不相同的范围
+   *
+   * @param c1
+   * @param c2
+   * @param el
+   */
+  const patchKeyedChildren = (c1, c2, el) => {
+    let i = 0;
+    let e1 = c1.length - 1;
+    let e2 = c2.length - 1;
+
+    // 1. sync from start. 依次从前往后比对 (a b) c => (a b) d e
+    while (i <= e1 && i <= e2) {
+      const n1 = c1[i];
+      const n2 = c2[i];
+      if (isSameVNode(n1, n2)) {
+        patch(n1, n2, el);
+      } else {
+        break;
+      }
+      i++;
+    }
+
+    // 2. sync from end. 依次从后往前比对 (a b) c => d e (b c)
+    while (e1 >= i && e2 >= i) {
+      const n1 = c1[e1];
+      const n2 = c2[e2];
+      if (isSameVNode(n1, n2)) {
+        patch(n1, n2, el);
+      } else {
+        break;
+      }
+      e1--;
+      e2--;
+    }
+
+    // 3. common sequence + mount. 新的多 && 老的少. 新增的部分为 i-e2 之间的部分.
+    // (a b) => (a b) c      i = 2, e1 = 1, e2 = 2
+    // (a b) => c (a b)      i = 0, e1 = -1, e2 = 0
+    if (i > e1) {
+      if (i <= e2) {
+        const nextPos = e2 + 1;
+        // 插入锚点
+        // 队列尾部插入时，anchor为null，新增的后续节点依次执行appendChildren。
+        // 队列头部插入时，anchor为差异部分的第一个，新增的前序节点依次执行insertBefore。【c a b -> d c a b时，d c依次插入到a的前面】
+        const anchor = c2[nextPos]?.el;
+        while (i <= e2) {
+          patch(null, c2[i], el, anchor);
+          i++;
+        }
+      }
+    }
+
+    // 4. common sequence + unmount. 新的少 && 老的多. 少的部分为 i-e1 之间部分.
+    // (a b) c => (a b)     i = 2, e1 = 2, e2 = 1
+    // a (b c) => (b c)     i = 0, e1 = 0, e2 = -1
+    else if (i > e2) {
+      if (i <= e1) {
+        while (i <= e1) {
+          unmount(c1[i]);
+          i++;
+        }
+      }
+    }
+
+    // 5. unknown sequence.
+    // [i ... e1 + 1]: a b [c d e] f g
+    // [i ... e2 + 1]: a b [e d c h] f g
+    // i = 2, e1 = 4, e2 = 5
+    else {
+      const s1 = i; // prev starting index
+      const s2 = i; // next starting index
+
+      // 1. build key: index map for newChildren.
+      // 做一个映射表，用于快速查找。如果老节点的在新的里面还有，那么更新该节点；如果没有就删除该节点。
+      const keyToNewIndexMap = new Map();
+      for (let index = s2; index <= e2; index++) {
+        const vnode = c2[index];
+        keyToNewIndexMap.set(vnode.key, index);
+      }
+
+      // 2. loop 老的子节点
+      // 映射表内找不到的节点：删除；找到的节点：更新
+      for (let index = s1; index <= e1; index++) {
+        const vnode = c1[index];
+        const newIndex = keyToNewIndexMap.get(vnode.key);
+
+        if (isUndefined(newIndex)) {
+          unmount(vnode); // 老的子节点在新的映射表内没有找到 => 删除该子节点
+        } else {
+          patch(vnode, c2[newIndex], el); // 新的里面有 => 仅对节点进行patch（更新属性、子节点）
+        }
+      }
+
+      // 3. move and mount. 倒叙插入
+      const toBePatched = e2 - s2 + 1; // 要倒叙插入的个数
+      for (let index = toBePatched - 1; index >= 0; index--) {
+        const newIndex = s2 + index;
+        const anchor = c2[newIndex + 1]?.el; // 插入锚点
+        const vnode = c2[newIndex];
+
+        if (vnode.el) { // 虚拟节点如果有el属性，说明渲染过，直接插入即可。否则更新
+          hostInsert(vnode.el, el, anchor);
+        } else {
+          patch(null, vnode, el, anchor);
+        }
+      }
+    }
+  };
+
+  /**
    * 比对儿子节点
    * @param n1
    * @param n2
@@ -114,7 +227,7 @@ export function createRenderer(renderOptions) {
     } else {
       if (prevShapeFlag & ShapeFlags.ARRAY_CHILDREN) {
         if (shapeFlag & ShapeFlags.ARRAY_CHILDREN) { // prev children was array  &  new children is array
-          // todo...
+          patchKeyedChildren(c1, c2, el);
         } else { // prev children was array  &  new children has no children
           unmountChildren(c1);
         }
@@ -155,10 +268,10 @@ export function createRenderer(renderOptions) {
    * @param n2
    * @param container
    */
-  const processElement = (n1, n2, container) => {
+  const processElement = (n1, n2, container, anchor) => {
     if (n1 === null) {
       // 老的虚拟节点为null，则说明是初始化操作，创建新的元素节点并插入到容器内
-      mountElement(n2, container);
+      mountElement(n2, container, anchor);
     } else {
       // n1和n2是相同节点 => diff
       patchElement(n1, n2, container);
@@ -171,7 +284,7 @@ export function createRenderer(renderOptions) {
    * @param n2
    * @param container
    */
-  const patch = (n1, n2, container) => {
+  const patch = (n1, n2, container, anchor = null) => {
     // 前后两次渲染同一个虚拟元素
     if (n1 === n2) {
       return;
@@ -184,7 +297,7 @@ export function createRenderer(renderOptions) {
       n1 = null;
     }
 
-    processElement(n1, n2, container);
+    processElement(n1, n2, container, anchor);
   };
 
   /**

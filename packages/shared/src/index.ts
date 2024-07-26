@@ -3,6 +3,10 @@ export * from './shapeFlags';
 export const NOOP = () => {
 };
 
+export function isUndefined(value) {
+  return value === undefined;
+}
+
 export function isString(value) {
   return typeof value === 'string';
 }
@@ -33,7 +37,7 @@ export const isSet = value => toTypeString(value) === '[object Set]';
 
 export const isOn = key => {
   return key.charCodeAt(0) === 111 /* o */
-  && key.charCodeAt(1) === 110 /* n */
-  && (key.charCodeAt(2) > 122 || key.charCodeAt(2) < 97); // uppercase letter
+    && key.charCodeAt(1) === 110 /* n */
+    && (key.charCodeAt(2) > 122 || key.charCodeAt(2) < 97); // uppercase letter
 };
 
