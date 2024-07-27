@@ -1,5 +1,6 @@
 import { isUndefined, ShapeFlags } from '@vue/shared';
 import { isSameVNode } from './vnode';
+import getSequence from './seq';
 
 export function createRenderer(renderOptions) {
   const {
@@ -163,6 +164,9 @@ export function createRenderer(renderOptions) {
       // 1. build key: index map for newChildren.
       // 做一个映射表，用于快速查找。如果老节点的在新的里面还有，那么更新该节点；如果没有就删除该节点。
       const keyToNewIndexMap = new Map();
+      const toBePatched = e2 - s2 + 1; // 要倒叙插入的个数
+      const newIndexToOldMapIndex = new Array(toBePatched).fill(0); // 新的子节点在老的数组中对应的下标
+
       for (let index = s2; index <= e2; index++) {
         const vnode = c2[index];
         keyToNewIndexMap.set(vnode.key, index);
@@ -177,19 +181,25 @@ export function createRenderer(renderOptions) {
         if (isUndefined(newIndex)) {
           unmount(vnode); // 老的子节点在新的映射表内没有找到 => 删除该子节点
         } else {
+          newIndexToOldMapIndex[newIndex - s2] = index + 1; // 0代表没有比对过的元素，所有要更新比对的节点值为index+1
           patch(vnode, c2[newIndex], el); // 新的里面有 => 仅对节点进行patch（更新属性、子节点）
         }
       }
 
       // 3. move and mount. 倒叙插入
-      const toBePatched = e2 - s2 + 1; // 要倒叙插入的个数
+      const increasingSeq = getSequence(newIndexToOldMapIndex); // 获取最长的连续递增子序列，这里面的子节点无需移动
+      let j = increasingSeq.length - 1;
       for (let index = toBePatched - 1; index >= 0; index--) {
         const newIndex = s2 + index;
         const anchor = c2[newIndex + 1]?.el; // 插入锚点
         const vnode = c2[newIndex];
 
         if (vnode.el) { // 虚拟节点如果有el属性，说明渲染过，直接插入即可。否则更新
-          hostInsert(vnode.el, el, anchor);
+          if (index === increasingSeq[j]) {
+            j--; // 在连续递增序列内的子节点，无需移动
+          } else {
+            hostInsert(vnode.el, el, anchor);
+          }
         } else {
           patch(null, vnode, el, anchor);
         }

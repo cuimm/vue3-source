@@ -596,6 +596,48 @@ function createVNode(type, props, children) {
   return vnode;
 }
 
+// packages/runtime-core/src/seq.ts
+function getSequence(arr) {
+  const result = [0];
+  const p = result.slice(0);
+  let start;
+  let end;
+  let middle;
+  const len = arr.length;
+  for (let i = 0; i < len; i++) {
+    const arrI = arr[i];
+    if (arrI !== 0) {
+      let resultLastIndex = result[result.length - 1];
+      if (arrI > arr[resultLastIndex]) {
+        p[i] = result[result.length - 1];
+        result.push(i);
+        continue;
+      }
+    }
+    start = 0;
+    end = result.length - 1;
+    while (start < end) {
+      middle = (start + end) / 2 | 0;
+      if (arr[result[middle]] < arrI) {
+        start = middle + 1;
+      } else {
+        end = middle;
+      }
+    }
+    if (arrI < arr[result[start]]) {
+      p[i] = result[start - 1];
+      result[start] = i;
+    }
+  }
+  let l = result.length;
+  let last = result[l - 1];
+  while (l-- > 0) {
+    result[l] = last;
+    last = p[last];
+  }
+  return result;
+}
+
 // packages/runtime-core/src/renderer.ts
 function createRenderer(renderOptions2) {
   const {
@@ -689,6 +731,8 @@ function createRenderer(renderOptions2) {
       const s1 = i;
       const s2 = i;
       const keyToNewIndexMap = /* @__PURE__ */ new Map();
+      const toBePatched = e2 - s2 + 1;
+      const newIndexToOldMapIndex = new Array(toBePatched).fill(0);
       for (let index = s2; index <= e2; index++) {
         const vnode = c2[index];
         keyToNewIndexMap.set(vnode.key, index);
@@ -699,16 +743,22 @@ function createRenderer(renderOptions2) {
         if (isUndefined(newIndex)) {
           unmount(vnode);
         } else {
+          newIndexToOldMapIndex[newIndex - s2] = index + 1;
           patch(vnode, c2[newIndex], el);
         }
       }
-      const toBePatched = e2 - s2 + 1;
+      const increasingSeq = getSequence(newIndexToOldMapIndex);
+      let j = increasingSeq.length - 1;
       for (let index = toBePatched - 1; index >= 0; index--) {
         const newIndex = s2 + index;
         const anchor = c2[newIndex + 1]?.el;
         const vnode = c2[newIndex];
         if (vnode.el) {
-          hostInsert(vnode.el, el, anchor);
+          if (index === increasingSeq[j]) {
+            j--;
+          } else {
+            hostInsert(vnode.el, el, anchor);
+          }
         } else {
           patch(null, vnode, el, anchor);
         }

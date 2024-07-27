@@ -1,0 +1,47 @@
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport"
+        content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>最长递归子序列</title>
+</head>
+<body>
+<div id="app"></div>
+<script type="module">
+  // import { createRenderer, render, h } from '/node_modules/@vue/runtime-dom/dist/runtime-dom.esm-browser.js';
+  import { render, h } from '../dist/runtime-dom.js';
+
+  // diff 算法优化
+  // 1. 前序比对完之后，新节点 [e,c,d,h] 在老节点中的下标(+1)为 [5,3,4,0]
+  // 2. [5,3,4,0] 的最长连续子序列为 [3, 4]，那么 c、d 节点两个节点只需要patch，无需对节点进行移动
+
+  const n1 = h('ul', {}, [
+    h('li', { key: 'a' }, 'a'),
+    h('li', { key: 'b' }, 'b'),
+    h('li', { key: 'c' }, 'c'),
+    h('li', { key: 'd' }, 'd'),
+    h('li', { key: 'e' }, 'e'),
+    h('li', { key: 'x' }, 'x 移除'),
+    h('li', { key: 'f' }, 'f'),
+    h('li', { key: 'g' }, 'g'),
+  ]);
+
+  const n2 = h('ul', {}, [
+    h('li', { key: 'a' }, 'a'),
+    h('li', { key: 'b' }, 'b'),
+    h('li', { key: 'e' }, 'e'),
+    h('li', { key: 'c' }, 'c'),
+    h('li', { key: 'd' }, 'd'),
+    h('li', { key: 'h', style: { color: 'red' } }, 'h 新增'),
+    h('li', { key: 'f' }, 'f'),
+    h('li', { key: 'g' }, 'g'),
+  ]);
+
+  render(n1, app);
+  setTimeout(() => {
+    render(n2, app);
+  }, 3000);
+</script>
+</body>
+</html>
