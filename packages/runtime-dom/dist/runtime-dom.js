@@ -830,22 +830,48 @@ function createRenderer(renderOptions2) {
       patchElement(n1, n2, container);
     }
   };
-  const mountComponent = (n1, n2, container, anchor) => {
+  const initProps = (instance, rawProps) => {
+    console.log("initProps", rawProps);
+    const propsOptions = instance.propsOptions || {};
+    const props = {};
+    const attrs = {};
+    if (rawProps) {
+      for (const key in rawProps) {
+        if (key in propsOptions) {
+          props[key] = rawProps[key];
+        } else {
+          attrs[key] = rawProps[key];
+        }
+      }
+    }
+    instance.props = reactive(props);
+    instance.attrs = attrs;
+  };
+  const mountComponent = (vnode, container, anchor) => {
     const { render: render3, data = () => {
-    } } = n2.type;
+    }, props: propsOptions = {} } = vnode.type;
     const state = reactive(data());
     const instance = {
       state,
       // 状态
-      vnode: n2,
+      vnode,
       // 组件的虚拟节点
       subTree: null,
       // render后生成的子树
       isMounted: false,
       // 组件是否挂载完成
-      update: null
+      update: null,
       // 组件的更新函数
+      props: {},
+      // 组件接收的属性
+      attrs: {},
+      // 用户传递的属性 - 组件接收的属性
+      propsOptions,
+      // 用户传递的属性
+      component: null
     };
+    vnode.component = instance;
+    initProps(instance, vnode.props);
     const componentUpdateFn = () => {
       if (!instance.isMounted) {
         const subTree = render3.call(state, state);
@@ -864,7 +890,7 @@ function createRenderer(renderOptions2) {
   };
   const processComponent = (n1, n2, container, anchor) => {
     if (n1 === null) {
-      mountComponent(n1, n2, container, anchor);
+      mountComponent(n2, container, anchor);
     } else {
     }
   };

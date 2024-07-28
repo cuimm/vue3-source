@@ -1,0 +1,52 @@
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport"
+        content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>Component Props & Attrs</title>
+</head>
+<body>
+<div id="app"></div>
+<script type="module">
+  // import { createRenderer, render, h, Text, Fragment } from '/node_modules/@vue/runtime-dom/dist/runtime-dom.esm-browser.js';
+  import { render, h, Fragment } from '../dist/runtime-dom.js';
+
+  /*
+  * $attrs：在生产环境是非响应式的，在开发环境是响应式的。
+  *
+  * $props：响应式的
+  *
+  * */
+
+  const VueComponent = {
+    props: {
+      name: String,
+      age: Number,
+    },
+    data() {
+      return {
+        x: 1,
+        y: 2,
+      };
+    },
+    render(proxy) {
+      console.log(proxy); // proxy对象上有$props和$attrs
+      return h('div', [
+        h(Text, `${this.name}`),
+        h('p', `${this.age}`),
+        h('h1', `${this.x + this.y}`),
+      ]);
+    }
+  };
+
+  render(h(VueComponent, {
+    name: 'cuimm',
+    age: 18,
+    a: 100,
+    b: 200
+  }), app);
+
+</script>
+</body>
+</html>

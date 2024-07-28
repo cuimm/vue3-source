@@ -291,30 +291,64 @@ export function createRenderer(renderOptions) {
   };
 
   /**
+   * 初始化props
+   * @param instance 组件对象
+   * @param rawProps 用户传递的所有属性
+   */
+  const initProps = (instance, rawProps) => {
+    console.log('initProps', rawProps);
+    const propsOptions = instance.propsOptions || {}; // 组件接收的属性
+
+    const props = {};
+    const attrs = {};
+
+    if (rawProps) {
+      for (const key in rawProps) {
+        if (key in propsOptions) {
+          props[key] = rawProps[key];
+        } else {
+          attrs[key] = rawProps[key];
+        }
+      }
+    }
+
+    instance.props = reactive(props);
+    instance.attrs = attrs;
+  };
+
+  /**
    * 渲染Component
    * 可以基于自己的状态重新渲染
-   * @param n1
-   * @param n2
+   * @param vnode
    * @param container
    * @param anchor
    */
-  const mountComponent = (n1, n2, container, anchor) => {
-    const { render, data = () => {} } = n2.type;
+  const mountComponent = (vnode, container, anchor) => {
+    const { render, data = () => {}, props: propsOptions = {} } = vnode.type;
 
     const state = reactive(data()); // 组件的状态，响应式的
 
     const instance = {
       state, // 状态
-      vnode: n2, // 组件的虚拟节点
+      vnode: vnode, // 组件的虚拟节点
       subTree: null, // render后生成的子树
       isMounted: false, // 组件是否挂载完成
       update: null as any, // 组件的更新函数
+      props: {}, // 组件接收的属性
+      attrs: {}, // 用户传递的属性 - 组件接收的属性
+      propsOptions: propsOptions, // 用户传递的属性
+      component: null,
     };
+
+    vnode.component = instance;
+
+    // 初始化props
+    initProps(instance, vnode.props);
 
     const componentUpdateFn = () => {
       if (!instance.isMounted) {
         const subTree = render.call(state, state);
-        patch(null, subTree, container, anchor);
+        patch(null, subTree, container, anchor); // Component渲染完毕之后，el挂载到subTree上（n1.component.subTree.el）
         instance.isMounted = true;
         instance.subTree = subTree;
       } else {
@@ -340,7 +374,7 @@ export function createRenderer(renderOptions) {
    */
   const processComponent = (n1, n2, container, anchor) => {
     if (n1 === null) {
-      mountComponent(n1, n2, container, anchor);
+      mountComponent(n2, container, anchor);
     } else {
       // todo...
     }
