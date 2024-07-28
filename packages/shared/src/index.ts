@@ -1,5 +1,10 @@
 export * from './shapeFlags';
 
+const hasOwnProperty = Object.prototype.hasOwnProperty;
+export const hasOwn = (value, key) => hasOwnProperty.call(value, key);
+
+export const warn = console.warn;
+
 export const NOOP = () => {
 };
 

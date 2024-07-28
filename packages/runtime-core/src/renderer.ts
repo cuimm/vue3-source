@@ -1,4 +1,4 @@
-import { isUndefined, ShapeFlags } from '@vue/shared';
+import { hasOwn, isUndefined, ShapeFlags, warn } from '@vue/shared';
 import { reactive, ReactiveEffect } from '@vue/reactivity';
 import getSequence from './seq';
 import { Fragment, Text, isSameVNode } from './vnode';
@@ -143,8 +143,8 @@ export function createRenderer(renderOptions) {
       }
     }
 
-    // 4. common sequence + unmount. 新的少 && 老的多. 少的部分为 i-e1 之间部分.
-    // (a b) c => (a b)     i = 2, e1 = 2, e2 = 1
+      // 4. common sequence + unmount. 新的少 && 老的多. 少的部分为 i-e1 之间部分.
+      // (a b) c => (a b)     i = 2, e1 = 2, e2 = 1
     // a (b c) => (b c)     i = 0, e1 = 0, e2 = -1
     else if (i > e2) {
       if (i <= e1) {
@@ -155,9 +155,9 @@ export function createRenderer(renderOptions) {
       }
     }
 
-    // 5. unknown sequence.
-    // [i ... e1 + 1]: a b [c d e] f g
-    // [i ... e2 + 1]: a b [e d c h] f g
+      // 5. unknown sequence.
+      // [i ... e1 + 1]: a b [c d e] f g
+      // [i ... e2 + 1]: a b [e d c h] f g
     // i = 2, e1 = 4, e2 = 5
     else {
       const s1 = i; // prev starting index
@@ -323,7 +323,10 @@ export function createRenderer(renderOptions) {
    * @param anchor
    */
   const mountComponent = (vnode, container, anchor) => {
-    const { render, data = () => {}, props: propsOptions = {} } = vnode.type;
+    const {
+      render, data = () => {
+      }, props: propsOptions = {}
+    } = vnode.type;
 
     const state = reactive(data()); // 组件的状态，响应式的
 
@@ -336,6 +339,7 @@ export function createRenderer(renderOptions) {
       props: {}, // 组件接收的属性
       attrs: {}, // 用户传递的属性 - 组件接收的属性
       propsOptions: propsOptions, // 用户传递的属性
+      proxy: null as any, // 组件代理对象，用来代理data、props、attrs，方便用户访问
       component: null,
     };
 
@@ -344,14 +348,47 @@ export function createRenderer(renderOptions) {
     // 初始化props
     initProps(instance, vnode.props);
 
+    // 对于一些无法修改的属性，如$attrs、$slots...，因为只读所以proxy代理对象上不会有set方法。当取$attrs时会代理到instance.attrs上。
+    // 构建公共属性代理，通过不同的【策略】来访问相应的方法。
+    const publicProperty = {
+      $attrs: instance => instance.attrs,
+    };
+    instance.proxy = new Proxy(instance, {
+      get(target, key) {
+        const { state, props } = target;
+        if (state && hasOwn(state, key)) {
+          return state[key];
+        }
+        if (props && hasOwn(props, key)) {
+          return props[key];
+        }
+        const getter = publicProperty[key];
+        if (getter) {
+          return getter(target);
+        }
+      },
+      set(target, key, value) {
+        const { state, props } = target;
+        if (state && hasOwn(state, key)) {
+          state[key] = value;
+          return true;
+        }
+        if (props && hasOwn(props, key)) {
+          warn('props are readonly!');
+          return false;
+        }
+        return true;
+      }
+    });
+
     const componentUpdateFn = () => {
       if (!instance.isMounted) {
-        const subTree = render.call(state, state);
+        const subTree = render.call(instance.proxy, instance.proxy);
         patch(null, subTree, container, anchor); // Component渲染完毕之后，el挂载到subTree上（n1.component.subTree.el）
         instance.isMounted = true;
         instance.subTree = subTree;
       } else {
-        const subTree = render.call(state, state);
+        const subTree = render.call(instance.proxy, instance.proxy);
         patch(instance.subTree, subTree, container, anchor);
         instance.subTree = subTree;
       }
@@ -405,8 +442,7 @@ export function createRenderer(renderOptions) {
   const processFragment = (n1, n2, container) => {
     if (n1 === null) {
       mountChildren(n2.children, container); // 初始化时渲染n2的子节点
-    }
-    else {
+    } else {
       patchChildren(n1, n2, container); // 更新时比对儿子节点
     }
   };

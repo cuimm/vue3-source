@@ -30,6 +30,9 @@ var nodeOps = {
 };
 
 // packages/shared/src/index.ts
+var hasOwnProperty = Object.prototype.hasOwnProperty;
+var hasOwn = (value, key) => hasOwnProperty.call(value, key);
+var warn = console.warn;
 var NOOP = () => {
 };
 function isUndefined(value) {
@@ -847,8 +850,12 @@ function createRenderer(renderOptions2) {
     instance.attrs = attrs;
   };
   const mountComponent = (vnode, container, anchor) => {
-    const { render: render3, data = () => {
-    }, props: propsOptions = {} } = vnode.type;
+    const {
+      render: render3,
+      data = () => {
+      },
+      props: propsOptions = {}
+    } = vnode.type;
     const state = reactive(data());
     const instance = {
       state,
@@ -867,18 +874,50 @@ function createRenderer(renderOptions2) {
       // 用户传递的属性 - 组件接收的属性
       propsOptions,
       // 用户传递的属性
+      proxy: null,
+      // 组件代理对象，用来代理data、props、attrs，方便用户访问
       component: null
     };
     vnode.component = instance;
     initProps(instance, vnode.props);
+    const publicProperty = {
+      $attrs: (instance2) => instance2.attrs
+    };
+    instance.proxy = new Proxy(instance, {
+      get(target, key) {
+        const { state: state2, props } = target;
+        if (state2 && hasOwn(state2, key)) {
+          return state2[key];
+        }
+        if (props && hasOwn(props, key)) {
+          return props[key];
+        }
+        const getter = publicProperty[key];
+        if (getter) {
+          return getter(target);
+        }
+      },
+      set(target, key, value) {
+        const { state: state2, props } = target;
+        if (state2 && hasOwn(state2, key)) {
+          state2[key] = value;
+          return true;
+        }
+        if (props && hasOwn(props, key)) {
+          warn("props are readonly!");
+          return false;
+        }
+        return true;
+      }
+    });
     const componentUpdateFn = () => {
       if (!instance.isMounted) {
-        const subTree = render3.call(state, state);
+        const subTree = render3.call(instance.proxy, instance.proxy);
         patch(null, subTree, container, anchor);
         instance.isMounted = true;
         instance.subTree = subTree;
       } else {
-        const subTree = render3.call(state, state);
+        const subTree = render3.call(instance.proxy, instance.proxy);
         patch(instance.subTree, subTree, container, anchor);
         instance.subTree = subTree;
       }
