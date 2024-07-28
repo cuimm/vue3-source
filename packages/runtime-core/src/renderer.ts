@@ -1,6 +1,7 @@
 import { isUndefined, ShapeFlags } from '@vue/shared';
-import { Fragment, Text, isSameVNode } from './vnode';
+import { reactive, ReactiveEffect } from '@vue/reactivity';
 import getSequence from './seq';
+import { Fragment, Text, isSameVNode } from './vnode';
 
 export function createRenderer(renderOptions) {
   const {
@@ -289,6 +290,62 @@ export function createRenderer(renderOptions) {
   };
 
   /**
+   * 渲染Component
+   * 可以基于自己的状态重新渲染
+   * @param n1
+   * @param n2
+   * @param container
+   * @param anchor
+   */
+  const mountComponent = (n1, n2, container, anchor) => {
+    const { render, data = () => {} } = n2.type;
+
+    const state = reactive(data()); // 组件的状态，响应式的
+
+    const instance = {
+      state, // 状态
+      vnode: n2, // 组件的虚拟节点
+      subTree: null, // render后生成的子树
+      isMounted: false, // 组件是否挂载完成
+      update: null as any, // 组件的更新函数
+    };
+
+    const componentUpdateFn = () => {
+      if (!instance.isMounted) {
+        const subTree = render.call(state, state);
+        patch(null, subTree, container, anchor);
+        instance.isMounted = true;
+        instance.subTree = subTree;
+      } else {
+        const subTree = render.call(state, state);
+        patch(instance.subTree, subTree, container, anchor);
+        instance.subTree = subTree;
+      }
+    };
+
+    const effect = new ReactiveEffect(componentUpdateFn, () => update());
+
+    const update = (instance.update = () => effect.run());
+
+    update();
+  };
+
+  /**
+   * 处理Component
+   * @param n1
+   * @param n2
+   * @param container
+   * @param anchor
+   */
+  const processComponent = (n1, n2, container, anchor) => {
+    if (n1 === null) {
+      mountComponent(n1, n2, container, anchor);
+    } else {
+      // todo...
+    }
+  };
+
+  /**
    * 处理Text组件
    * @param n1
    * @param n2
@@ -339,7 +396,7 @@ export function createRenderer(renderOptions) {
       n1 = null;
     }
 
-    const { type } = n2;
+    const { type, shapeFlag } = n2;
     switch (type) {
       case Text:
         processText(n1, n2, container);
@@ -348,7 +405,11 @@ export function createRenderer(renderOptions) {
         processFragment(n1, n2, container);
         break;
       default:
-        processElement(n1, n2, container, anchor);
+        if (shapeFlag & ShapeFlags.ELEMENT) {
+          processElement(n1, n2, container, anchor);
+        } else if (shapeFlag & ShapeFlags.COMPONENT) {
+          processComponent(n1, n2, container, anchor);
+        }
         break;
     }
   };

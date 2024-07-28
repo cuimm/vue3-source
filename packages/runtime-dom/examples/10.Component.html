@@ -1,0 +1,39 @@
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport"
+        content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>Component</title>
+</head>
+<body>
+<div id="app"></div>
+<script type="module">
+  // import { createRenderer, render, h, Fragment } from '/node_modules/@vue/runtime-dom/dist/runtime-dom.esm-browser.js';
+  import { render, h, Fragment } from '../dist/runtime-dom.js';
+
+  const VueComponent = {
+    data() {
+      return {
+        name: 'cuimm',
+        age: 18,
+      };
+    },
+    render() {
+      setTimeout(() => {
+        this.age++;
+      }, 1000);
+
+      return h(Fragment, [
+        h('div', `名字${this.name}`),
+        h('div', `年龄${this.age}`),
+      ]);
+    },
+  };
+
+  render(h(VueComponent), app);
+
+
+</script>
+</body>
+</html>

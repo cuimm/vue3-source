@@ -565,39 +565,6 @@ function traverse(value, depth = Infinity, seen) {
   return value;
 }
 
-// packages/runtime-core/src/vnode.ts
-var Text = Symbol("Text");
-var Fragment = Symbol("Fragment");
-function isVNode(value) {
-  return value ? value.__v_isVNode === true : false;
-}
-function isSameVNode(n1, n2) {
-  return n1.type === n2.type && n1.key === n2.key;
-}
-function createVNode(type, props, children) {
-  let shapeFlag = isString(type) ? 1 /* ELEMENT */ : 0;
-  const vnode = {
-    __v_isVNode: true,
-    type,
-    props,
-    children,
-    shapeFlag,
-    key: props?.key,
-    // 用于diff算法比对
-    el: null
-    // 虚拟节点对应的真实节点
-  };
-  if (children) {
-    if (isArray(children)) {
-      vnode.shapeFlag |= 16 /* ARRAY_CHILDREN */;
-    } else {
-      vnode.children = String(children);
-      vnode.shapeFlag |= 8 /* TEXT_CHILDREN */;
-    }
-  }
-  return vnode;
-}
-
 // packages/runtime-core/src/seq.ts
 function getSequence(arr) {
   const result = [0];
@@ -638,6 +605,39 @@ function getSequence(arr) {
     last = p[last];
   }
   return result;
+}
+
+// packages/runtime-core/src/vnode.ts
+var Text = Symbol("Text");
+var Fragment = Symbol("Fragment");
+function isVNode(value) {
+  return value ? value.__v_isVNode === true : false;
+}
+function isSameVNode(n1, n2) {
+  return n1.type === n2.type && n1.key === n2.key;
+}
+function createVNode(type, props, children) {
+  let shapeFlag = isString(type) ? 1 /* ELEMENT */ : isObject(type) ? 4 /* STATEFUL_COMPONENT */ : 0;
+  const vnode = {
+    __v_isVNode: true,
+    type,
+    props,
+    children,
+    shapeFlag,
+    key: props?.key,
+    // 用于diff算法比对
+    el: null
+    // 虚拟节点对应的真实节点
+  };
+  if (children) {
+    if (isArray(children)) {
+      vnode.shapeFlag |= 16 /* ARRAY_CHILDREN */;
+    } else {
+      vnode.children = String(children);
+      vnode.shapeFlag |= 8 /* TEXT_CHILDREN */;
+    }
+  }
+  return vnode;
 }
 
 // packages/runtime-core/src/renderer.ts
@@ -810,6 +810,44 @@ function createRenderer(renderOptions2) {
       patchElement(n1, n2, container);
     }
   };
+  const mountComponent = (n1, n2, container, anchor) => {
+    const { render: render3, data = () => {
+    } } = n2.type;
+    const state = reactive(data());
+    const instance = {
+      state,
+      // 状态
+      vnode: n2,
+      // 组件的虚拟节点
+      subTree: null,
+      // render后生成的子树
+      isMounted: false,
+      // 组件是否挂载完成
+      update: null
+      // 组件的更新函数
+    };
+    const componentUpdateFn = () => {
+      if (!instance.isMounted) {
+        const subTree = render3.call(state, state);
+        patch(null, subTree, container, anchor);
+        instance.isMounted = true;
+        instance.subTree = subTree;
+      } else {
+        const subTree = render3.call(state, state);
+        patch(instance.subTree, subTree, container, anchor);
+        instance.subTree = subTree;
+      }
+    };
+    const effect2 = new ReactiveEffect(componentUpdateFn, () => update());
+    const update = instance.update = () => effect2.run();
+    update();
+  };
+  const processComponent = (n1, n2, container, anchor) => {
+    if (n1 === null) {
+      mountComponent(n1, n2, container, anchor);
+    } else {
+    }
+  };
   const processText = (n1, n2, container) => {
     if (n1 === null) {
       hostInsert(n2.el = hostCreateText(n2.children), container);
@@ -835,7 +873,7 @@ function createRenderer(renderOptions2) {
       unmount(n1);
       n1 = null;
     }
-    const { type } = n2;
+    const { type, shapeFlag } = n2;
     switch (type) {
       case Text:
         processText(n1, n2, container);
@@ -844,7 +882,11 @@ function createRenderer(renderOptions2) {
         processFragment(n1, n2, container);
         break;
       default:
-        processElement(n1, n2, container, anchor);
+        if (shapeFlag & 1 /* ELEMENT */) {
+          processElement(n1, n2, container, anchor);
+        } else if (shapeFlag & 6 /* COMPONENT */) {
+          processComponent(n1, n2, container, anchor);
+        }
         break;
     }
   };
