@@ -831,7 +831,6 @@ function createRenderer(renderOptions2) {
     }
   };
   const initProps = (instance, rawProps) => {
-    console.log("initProps", rawProps);
     const propsOptions = instance.propsOptions || {};
     const props = {};
     const attrs = {};

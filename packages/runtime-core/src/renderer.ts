@@ -296,7 +296,6 @@ export function createRenderer(renderOptions) {
    * @param rawProps 用户传递的所有属性
    */
   const initProps = (instance, rawProps) => {
-    console.log('initProps', rawProps);
     const propsOptions = instance.propsOptions || {}; // 组件接收的属性
 
     const props = {};
