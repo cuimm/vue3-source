@@ -640,6 +640,26 @@ function createVNode(type, props, children) {
   return vnode;
 }
 
+// packages/runtime-core/src/scheduler.ts
+var queue = [];
+var resolvePromise = Promise.resolve();
+var isFlushing = false;
+function queueJob(job) {
+  if (!queue.includes(job)) {
+    queue.push(job);
+  }
+  if (!isFlushing) {
+    isFlushing = true;
+    resolvePromise.then(() => {
+      isFlushing = false;
+      const copyQueue = queue.slice(0);
+      queue.length = 0;
+      copyQueue.forEach((job2) => job2());
+      copyQueue.length = 0;
+    });
+  }
+}
+
 // packages/runtime-core/src/renderer.ts
 function createRenderer(renderOptions2) {
   const {
@@ -838,7 +858,7 @@ function createRenderer(renderOptions2) {
         instance.subTree = subTree;
       }
     };
-    const effect2 = new ReactiveEffect(componentUpdateFn, () => update());
+    const effect2 = new ReactiveEffect(componentUpdateFn, () => queueJob(update));
     const update = instance.update = () => effect2.run();
     update();
   };

@@ -4,7 +4,7 @@
   <meta name="viewport"
         content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
   <meta http-equiv="X-UA-Compatible" content="ie=edge">
-  <title>Component</title>
+  <title>Component Queue Job</title>
 </head>
 <body>
 <div id="app"></div>
@@ -22,19 +22,19 @@
     render() {
       setTimeout(() => {
         this.age++;
+        this.age++; // 同时多次更新状态：内部通过事件环机制，延迟更新操作。宏任务 -> 微任务
       }, 1000);
 
       return h(Fragment, [
         h('div', `名字${this.name}`),
         h('div', `年龄${this.age}`),
       ]);
-    },
+    }
   };
 
   // h(VueComponent) 生成的是vnode
   // render(h(VueComponent), app) 生成的是subTree
   render(h(VueComponent), app);
-
 
 </script>
 </body>

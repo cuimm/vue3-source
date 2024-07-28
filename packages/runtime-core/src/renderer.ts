@@ -2,6 +2,7 @@ import { isUndefined, ShapeFlags } from '@vue/shared';
 import { reactive, ReactiveEffect } from '@vue/reactivity';
 import getSequence from './seq';
 import { Fragment, Text, isSameVNode } from './vnode';
+import { queueJob } from './scheduler';
 
 export function createRenderer(renderOptions) {
   const {
@@ -323,7 +324,7 @@ export function createRenderer(renderOptions) {
       }
     };
 
-    const effect = new ReactiveEffect(componentUpdateFn, () => update());
+    const effect = new ReactiveEffect(componentUpdateFn, () => queueJob(update)); // 状态变化之后，异步更新
 
     const update = (instance.update = () => effect.run());
 
