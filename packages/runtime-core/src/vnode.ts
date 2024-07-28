@@ -1,5 +1,7 @@
 import { isArray, isString, ShapeFlags } from '@vue/shared';
 
+export const Text = Symbol('text');
+
 /**
  * 是否为虚拟节点
  * @param value

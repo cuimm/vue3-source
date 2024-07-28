@@ -566,6 +566,7 @@ function traverse(value, depth = Infinity, seen) {
 }
 
 // packages/runtime-core/src/vnode.ts
+var Text = Symbol("text");
 function isVNode(value) {
   return value ? value.__v_isVNode === true : false;
 }
@@ -808,6 +809,16 @@ function createRenderer(renderOptions2) {
       patchElement(n1, n2, container);
     }
   };
+  const processText = (n1, n2, container) => {
+    if (n1 === null) {
+      hostInsert(n2.el = hostCreateText(n2.children), container);
+    } else {
+      const el = n2.el = n1.el;
+      if (n1.children !== n2.children) {
+        hostSetText(el, n2.children);
+      }
+    }
+  };
   const patch = (n1, n2, container, anchor = null) => {
     if (n1 === n2) {
       return;
@@ -816,7 +827,15 @@ function createRenderer(renderOptions2) {
       unmount(n1);
       n1 = null;
     }
-    processElement(n1, n2, container, anchor);
+    const { type } = n2;
+    switch (type) {
+      case Text:
+        processText(n1, n2, container);
+        break;
+      default:
+        processElement(n1, n2, container, anchor);
+        break;
+    }
   };
   const unmount = (vnode) => {
     hostRemove(vnode.el);
@@ -866,6 +885,7 @@ var render = function(vnode, container) {
 };
 export {
   ReactiveEffect,
+  Text,
   activeEffect,
   computed,
   createRenderer,

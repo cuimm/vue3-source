@@ -1,5 +1,5 @@
 import { isUndefined, ShapeFlags } from '@vue/shared';
-import { isSameVNode } from './vnode';
+import { isSameVNode, Text } from './vnode';
 import getSequence from './seq';
 
 export function createRenderer(renderOptions) {
@@ -289,6 +289,23 @@ export function createRenderer(renderOptions) {
   };
 
   /**
+   * 处理Text组件
+   * @param n1
+   * @param n2
+   * @param container
+   */
+  const processText = (n1, n2, container) => {
+    if (n1 === null) {
+      hostInsert((n2.el = hostCreateText(n2.children)), container); // 初始化Text节点，并将该节点插入到容器内
+    } else {
+      const el = (n2.el = n1.el); // 节点复用
+      if (n1.children !== n2.children) {
+        hostSetText(el, n2.children); // 更新文本节点
+      }
+    }
+  };
+
+  /**
    * dom diff
    * @param n1
    * @param n2
@@ -307,7 +324,15 @@ export function createRenderer(renderOptions) {
       n1 = null;
     }
 
-    processElement(n1, n2, container, anchor);
+    const { type } = n2;
+    switch (type) {
+      case Text:
+        processText(n1, n2, container);
+        break;
+      default:
+        processElement(n1, n2, container, anchor);
+        break;
+    }
   };
 
   /**
