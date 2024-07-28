@@ -1,0 +1,38 @@
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport"
+        content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>Fragment 组件</title>
+</head>
+<body>
+<div id="app"></div>
+<script type="module">
+  // import { createRenderer, render, h, Fragment } from '/node_modules/@vue/runtime-dom/dist/runtime-dom.esm-browser.js';
+  import { render, h, Fragment } from '../dist/runtime-dom.js';
+
+  render(h(Fragment, [
+    h('div', 'hello'),
+    h('div', 'world'),
+  ]), app);
+
+  /*
+  // 更新
+  setTimeout(() => {
+    render(h(Fragment, [
+      h('div', 'hello'),
+      h('div', 'vue3'),
+    ]), app);
+  }, 2000);
+  */
+
+  // 卸载
+  setTimeout(() => {
+    render(null, app);
+  }, 2000);
+
+
+</script>
+</body>
+</html>

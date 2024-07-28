@@ -1,6 +1,8 @@
 import { isArray, isString, ShapeFlags } from '@vue/shared';
 
-export const Text = Symbol('text');
+export const Text = Symbol('Text');
+
+export const Fragment = Symbol('Fragment');
 
 /**
  * 是否为虚拟节点

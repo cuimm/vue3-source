@@ -566,7 +566,8 @@ function traverse(value, depth = Infinity, seen) {
 }
 
 // packages/runtime-core/src/vnode.ts
-var Text = Symbol("text");
+var Text = Symbol("Text");
+var Fragment = Symbol("Fragment");
 function isVNode(value) {
   return value ? value.__v_isVNode === true : false;
 }
@@ -819,6 +820,13 @@ function createRenderer(renderOptions2) {
       }
     }
   };
+  const processFragment = (n1, n2, container) => {
+    if (n1 === null) {
+      mountChildren(n2.children, container);
+    } else {
+      patchChildren(n1, n2, container);
+    }
+  };
   const patch = (n1, n2, container, anchor = null) => {
     if (n1 === n2) {
       return;
@@ -832,13 +840,21 @@ function createRenderer(renderOptions2) {
       case Text:
         processText(n1, n2, container);
         break;
+      case Fragment:
+        processFragment(n1, n2, container);
+        break;
       default:
         processElement(n1, n2, container, anchor);
         break;
     }
   };
   const unmount = (vnode) => {
-    hostRemove(vnode.el);
+    const { type, children } = vnode;
+    if (type === Fragment) {
+      unmountChildren(children);
+    } else {
+      hostRemove(vnode.el);
+    }
   };
   const render2 = (vnode, container) => {
     if (vnode === null) {
@@ -884,6 +900,7 @@ var render = function(vnode, container) {
   return createRenderer(renderOptions).render(vnode, container);
 };
 export {
+  Fragment,
   ReactiveEffect,
   Text,
   activeEffect,

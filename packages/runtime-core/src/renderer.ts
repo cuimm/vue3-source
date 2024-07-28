@@ -1,5 +1,5 @@
 import { isUndefined, ShapeFlags } from '@vue/shared';
-import { isSameVNode, Text } from './vnode';
+import { Fragment, Text, isSameVNode } from './vnode';
 import getSequence from './seq';
 
 export function createRenderer(renderOptions) {
@@ -306,6 +306,21 @@ export function createRenderer(renderOptions) {
   };
 
   /**
+   * 处理Fragment组件
+   * @param n1
+   * @param n2
+   * @param container
+   */
+  const processFragment = (n1, n2, container) => {
+    if (n1 === null) {
+      mountChildren(n2.children, container); // 初始化时渲染n2的子节点
+    }
+    else {
+      patchChildren(n1, n2, container); // 更新时比对儿子节点
+    }
+  };
+
+  /**
    * dom diff
    * @param n1
    * @param n2
@@ -329,6 +344,9 @@ export function createRenderer(renderOptions) {
       case Text:
         processText(n1, n2, container);
         break;
+      case Fragment:
+        processFragment(n1, n2, container);
+        break;
       default:
         processElement(n1, n2, container, anchor);
         break;
@@ -340,7 +358,12 @@ export function createRenderer(renderOptions) {
    * @param vnode
    */
   const unmount = vnode => {
-    hostRemove(vnode.el);
+    const { type, children } = vnode;
+    if (type === Fragment) { // 卸载Fragment组件
+      unmountChildren(children);
+    } else {
+      hostRemove(vnode.el);
+    }
   };
 
   /**
