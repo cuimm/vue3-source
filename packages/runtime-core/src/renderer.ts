@@ -296,7 +296,7 @@ export function createRenderer(renderOptions) {
    * @param rawProps 用户传递的所有属性
    */
   const initProps = (instance, rawProps) => {
-    const propsOptions = instance.propsOptions || {}; // 组件接收的属性
+    const propsOptions = instance.propsOptions || {}; // 组件接收的属性定义 { name: String ...}
 
     const props = {};
     const attrs = {};
@@ -323,10 +323,7 @@ export function createRenderer(renderOptions) {
    * @param anchor
    */
   const mountComponent = (vnode, container, anchor) => {
-    const {
-      render, data = () => {
-      }, props: propsOptions = {}
-    } = vnode.type;
+    const { render, data = () => {}, props: propsOptions = {} } = vnode.type;
 
     const state = reactive(data()); // 组件的状态，响应式的
 
@@ -337,8 +334,8 @@ export function createRenderer(renderOptions) {
       isMounted: false, // 组件是否挂载完成
       update: null as any, // 组件的更新函数
       props: {}, // 组件接收的属性
-      attrs: {}, // 用户传递的属性 - 组件接收的属性
-      propsOptions: propsOptions, // 用户传递的属性
+      attrs: {}, // 用户传递的属性(vnode.props) - 组件接收的属性
+      propsOptions: propsOptions, // 组件接收的属性定义
       proxy: null as any, // 组件代理对象，用来代理data、props、attrs，方便用户访问
       component: null,
     };

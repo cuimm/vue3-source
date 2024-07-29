@@ -850,12 +850,8 @@ function createRenderer(renderOptions2) {
     instance.attrs = attrs;
   };
   const mountComponent = (vnode, container, anchor) => {
-    const {
-      render: render3,
-      data = () => {
-      },
-      props: propsOptions = {}
-    } = vnode.type;
+    const { render: render3, data = () => {
+    }, props: propsOptions = {} } = vnode.type;
     const state = reactive(data());
     const instance = {
       state,
@@ -871,9 +867,9 @@ function createRenderer(renderOptions2) {
       props: {},
       // 组件接收的属性
       attrs: {},
-      // 用户传递的属性 - 组件接收的属性
+      // 用户传递的属性(vnode.props) - 组件接收的属性
       propsOptions,
-      // 用户传递的属性
+      // 组件接收的属性定义
       proxy: null,
       // 组件代理对象，用来代理data、props、attrs，方便用户访问
       component: null
