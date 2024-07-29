@@ -663,6 +663,92 @@ function queueJob(job) {
   }
 }
 
+// packages/runtime-core/src/component.ts
+var initProps = (instance, rawProps) => {
+  const propsOptions = instance.propsOptions || {};
+  const props = {};
+  const attrs = {};
+  if (rawProps) {
+    for (const key in rawProps) {
+      if (key in propsOptions) {
+        props[key] = rawProps[key];
+      } else {
+        attrs[key] = rawProps[key];
+      }
+    }
+  }
+  instance.props = reactive(props);
+  instance.attrs = attrs;
+};
+function createComponentInstance(vnode) {
+  const instance = {
+    data: null,
+    // 状态
+    vnode,
+    // 组件的虚拟节点
+    subTree: null,
+    // render后生成的子树
+    isMounted: false,
+    // 组件是否挂载完成
+    update: null,
+    // 组件的更新函数
+    props: {},
+    // 组件接收的属性
+    attrs: {},
+    // 用户传递的属性(vnode.props) - 组件接收的属性
+    propsOptions: vnode.type.props,
+    // 组件接收的属性定义（用户声明的哪些属性是组件的属性）
+    proxy: null,
+    // 组件代理对象，用来代理data、props、attrs，方便用户访问
+    component: null
+  };
+  return instance;
+}
+var publicPropertiesMap = {
+  $: (instance) => instance,
+  $data: (instance) => instance.data,
+  $attrs: (instance) => instance.attrs
+};
+var PublicInstanceProxyHandlers = {
+  get(target, key) {
+    const { data, props } = target;
+    if (data && hasOwn(data, key)) {
+      return data[key];
+    }
+    if (props && hasOwn(props, key)) {
+      return props[key];
+    }
+    const getter = publicPropertiesMap[key];
+    if (getter) {
+      return getter(target);
+    }
+  },
+  set(target, key, value) {
+    const { data, props } = target;
+    if (data && hasOwn(data, key)) {
+      data[key] = value;
+      return true;
+    }
+    if (props && hasOwn(props, key)) {
+      warn("props are readonly!");
+      return false;
+    }
+    return true;
+  }
+};
+function setupComponent(instance) {
+  const { vnode } = instance;
+  initProps(instance, vnode.props);
+  instance.proxy = new Proxy(instance, PublicInstanceProxyHandlers);
+  const { data, render: render2 } = vnode.type;
+  if (!isFunction(data)) {
+    warn("data options must be a function");
+    return;
+  }
+  instance.data = reactive(data.call(instance.proxy));
+  instance.render = render2;
+}
+
 // packages/runtime-core/src/renderer.ts
 function createRenderer(renderOptions2) {
   const {
@@ -833,79 +919,8 @@ function createRenderer(renderOptions2) {
       patchElement(n1, n2, container);
     }
   };
-  const initProps = (instance, rawProps) => {
-    const propsOptions = instance.propsOptions || {};
-    const props = {};
-    const attrs = {};
-    if (rawProps) {
-      for (const key in rawProps) {
-        if (key in propsOptions) {
-          props[key] = rawProps[key];
-        } else {
-          attrs[key] = rawProps[key];
-        }
-      }
-    }
-    instance.props = reactive(props);
-    instance.attrs = attrs;
-  };
-  const mountComponent = (vnode, container, anchor) => {
-    const { render: render3, data = () => {
-    }, props: propsOptions = {} } = vnode.type;
-    const state = reactive(data());
-    const instance = {
-      state,
-      // 状态
-      vnode,
-      // 组件的虚拟节点
-      subTree: null,
-      // render后生成的子树
-      isMounted: false,
-      // 组件是否挂载完成
-      update: null,
-      // 组件的更新函数
-      props: {},
-      // 组件接收的属性
-      attrs: {},
-      // 用户传递的属性(vnode.props) - 组件接收的属性
-      propsOptions,
-      // 组件接收的属性定义
-      proxy: null,
-      // 组件代理对象，用来代理data、props、attrs，方便用户访问
-      component: null
-    };
-    vnode.component = instance;
-    initProps(instance, vnode.props);
-    const publicProperty = {
-      $attrs: (instance2) => instance2.attrs
-    };
-    instance.proxy = new Proxy(instance, {
-      get(target, key) {
-        const { state: state2, props } = target;
-        if (state2 && hasOwn(state2, key)) {
-          return state2[key];
-        }
-        if (props && hasOwn(props, key)) {
-          return props[key];
-        }
-        const getter = publicProperty[key];
-        if (getter) {
-          return getter(target);
-        }
-      },
-      set(target, key, value) {
-        const { state: state2, props } = target;
-        if (state2 && hasOwn(state2, key)) {
-          state2[key] = value;
-          return true;
-        }
-        if (props && hasOwn(props, key)) {
-          warn("props are readonly!");
-          return false;
-        }
-        return true;
-      }
-    });
+  const setupRenderEffect = (instance, container, anchor) => {
+    const { render: render3 } = instance;
     const componentUpdateFn = () => {
       if (!instance.isMounted) {
         const subTree = render3.call(instance.proxy, instance.proxy);
@@ -921,6 +936,11 @@ function createRenderer(renderOptions2) {
     const effect2 = new ReactiveEffect(componentUpdateFn, () => queueJob(update));
     const update = instance.update = () => effect2.run();
     update();
+  };
+  const mountComponent = (vnode, container, anchor) => {
+    const instance = vnode.component = createComponentInstance(vnode);
+    setupComponent(instance);
+    setupRenderEffect(instance, container, anchor);
   };
   const processComponent = (n1, n2, container, anchor) => {
     if (n1 === null) {

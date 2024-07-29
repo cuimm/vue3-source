@@ -1,0 +1,108 @@
+import { hasOwn, isFunction, warn } from '@vue/shared';
+import { reactive } from '@vue/reactivity';
+
+/**
+ * 初始化props
+ * @param instance 组件对象
+ * @param rawProps 用户传递的所有属性
+ */
+const initProps = (instance, rawProps) => {
+  const propsOptions = instance.propsOptions || {}; // 组件接收的属性定义 { name: String ...}
+
+  const props = {};
+  const attrs = {};
+
+  if (rawProps) {
+    for (const key in rawProps) {
+      if (key in propsOptions) {
+        props[key] = rawProps[key];
+      } else {
+        attrs[key] = rawProps[key];
+      }
+    }
+  }
+
+  instance.props = reactive(props);
+  instance.attrs = attrs;
+};
+
+/**
+ * 创建组件实力
+ * @param vnode 组件虚拟节点
+ */
+export function createComponentInstance(vnode) {
+  const instance = {
+    data: null, // 状态
+    vnode: vnode, // 组件的虚拟节点
+    subTree: null, // render后生成的子树
+    isMounted: false, // 组件是否挂载完成
+    update: null as any, // 组件的更新函数
+    props: {}, // 组件接收的属性
+    attrs: {}, // 用户传递的属性(vnode.props) - 组件接收的属性
+    propsOptions: vnode.type.props, // 组件接收的属性定义（用户声明的哪些属性是组件的属性）
+    proxy: null as any, // 组件代理对象，用来代理data、props、attrs，方便用户访问
+    component: null,
+  };
+  return instance;
+}
+
+// 对于一些无法修改的属性，如$attrs、$slots...，因为只读所以proxy代理对象上不会有set方法。当取$attrs时会代理到instance.attrs上。
+// 构建公共属性代理，通过不同的【策略】来访问相应的方法。
+const publicPropertiesMap = {
+  $: instance => instance,
+  $data: instance => instance.data,
+  $attrs: instance => instance.attrs,
+};
+
+// 组件数据代理（data、props...）
+const PublicInstanceProxyHandlers = {
+  get(target, key) {
+    const { data, props } = target;
+    if (data && hasOwn(data, key)) {
+      return data[key];
+    }
+    if (props && hasOwn(props, key)) {
+      return props[key];
+    }
+    const getter = publicPropertiesMap[key];
+    if (getter) {
+      return getter(target);
+    }
+  },
+  set(target, key, value) {
+    const { data, props } = target;
+    if (data && hasOwn(data, key)) {
+      data[key] = value;
+      return true;
+    }
+    if (props && hasOwn(props, key)) {
+      warn('props are readonly!');
+      return false;
+    }
+    return true;
+  }
+};
+
+/**
+ * 给组件实例赋值
+ * @param instance
+ */
+export function setupComponent(instance) {
+  const { vnode } = instance;
+
+  // 初始化props
+  initProps(instance, vnode.props);
+
+  // 给代理对象赋值
+  instance.proxy = new Proxy(instance, PublicInstanceProxyHandlers);
+
+  const { data, render } = vnode.type;
+
+  if (!isFunction(data)) {
+    warn('data options must be a function');
+    return;
+  }
+
+  instance.data = reactive(data.call(instance.proxy));
+  instance.render = render;
+}

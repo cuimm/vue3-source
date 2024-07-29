@@ -3,6 +3,7 @@ import { reactive, ReactiveEffect } from '@vue/reactivity';
 import getSequence from './seq';
 import { Fragment, Text, isSameVNode } from './vnode';
 import { queueJob } from './scheduler';
+import { createComponentInstance, setupComponent } from './component';
 
 export function createRenderer(renderOptions) {
   const {
@@ -291,92 +292,13 @@ export function createRenderer(renderOptions) {
   };
 
   /**
-   * 初始化props
-   * @param instance 组件对象
-   * @param rawProps 用户传递的所有属性
-   */
-  const initProps = (instance, rawProps) => {
-    const propsOptions = instance.propsOptions || {}; // 组件接收的属性定义 { name: String ...}
-
-    const props = {};
-    const attrs = {};
-
-    if (rawProps) {
-      for (const key in rawProps) {
-        if (key in propsOptions) {
-          props[key] = rawProps[key];
-        } else {
-          attrs[key] = rawProps[key];
-        }
-      }
-    }
-
-    instance.props = reactive(props);
-    instance.attrs = attrs;
-  };
-
-  /**
-   * 渲染Component
-   * 可以基于自己的状态重新渲染
-   * @param vnode
+   * 创建组件effect
+   * @param instance
    * @param container
    * @param anchor
    */
-  const mountComponent = (vnode, container, anchor) => {
-    const { render, data = () => {}, props: propsOptions = {} } = vnode.type;
-
-    const state = reactive(data()); // 组件的状态，响应式的
-
-    const instance = {
-      state, // 状态
-      vnode: vnode, // 组件的虚拟节点
-      subTree: null, // render后生成的子树
-      isMounted: false, // 组件是否挂载完成
-      update: null as any, // 组件的更新函数
-      props: {}, // 组件接收的属性
-      attrs: {}, // 用户传递的属性(vnode.props) - 组件接收的属性
-      propsOptions: propsOptions, // 组件接收的属性定义
-      proxy: null as any, // 组件代理对象，用来代理data、props、attrs，方便用户访问
-      component: null,
-    };
-
-    vnode.component = instance;
-
-    // 初始化props
-    initProps(instance, vnode.props);
-
-    // 对于一些无法修改的属性，如$attrs、$slots...，因为只读所以proxy代理对象上不会有set方法。当取$attrs时会代理到instance.attrs上。
-    // 构建公共属性代理，通过不同的【策略】来访问相应的方法。
-    const publicProperty = {
-      $attrs: instance => instance.attrs,
-    };
-    instance.proxy = new Proxy(instance, {
-      get(target, key) {
-        const { state, props } = target;
-        if (state && hasOwn(state, key)) {
-          return state[key];
-        }
-        if (props && hasOwn(props, key)) {
-          return props[key];
-        }
-        const getter = publicProperty[key];
-        if (getter) {
-          return getter(target);
-        }
-      },
-      set(target, key, value) {
-        const { state, props } = target;
-        if (state && hasOwn(state, key)) {
-          state[key] = value;
-          return true;
-        }
-        if (props && hasOwn(props, key)) {
-          warn('props are readonly!');
-          return false;
-        }
-        return true;
-      }
-    });
+  const setupRenderEffect = (instance, container, anchor) => {
+    const { render } = instance;
 
     const componentUpdateFn = () => {
       if (!instance.isMounted) {
@@ -396,6 +318,24 @@ export function createRenderer(renderOptions) {
     const update = (instance.update = () => effect.run());
 
     update();
+  };
+
+  /**
+   * 渲染Component
+   * 可以基于自己的状态重新渲染
+   * @param vnode
+   * @param container
+   * @param anchor
+   */
+  const mountComponent = (vnode, container, anchor) => {
+    // 1. 创建组件实例
+    const instance = (vnode.component = createComponentInstance(vnode));
+
+    // 2. 给实例组件赋值
+    setupComponent(instance);
+
+    // 3. 创建组件effect
+    setupRenderEffect(instance, container, anchor);
   };
 
   /**

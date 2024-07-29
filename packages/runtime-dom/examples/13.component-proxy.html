@@ -32,7 +32,13 @@
       console.log(this === proxy); // => true
       console.log(proxy); // 组件代理对象
 
+      console.log('$：', this.$);
+      console.log('$data：', this.$data);
+
       return h('ul', [
+        h('li', '$：' + this.$),
+        h('li', '$data：' + this.$data),
+
         h('li', '姓名：' + this.name),
         h('li', '姓名：' + proxy.name),
 
@@ -40,6 +46,7 @@
         h('li', '年龄：' + proxy.age),
 
         h('li', 'x：' + this.x),
+        h('li', 'x：' + this.$data.x), // 从代理对象上获取data中x的值
         h('li', 'y：' + this.y),
 
         h('li', 'a：' + this.$attrs.a),
