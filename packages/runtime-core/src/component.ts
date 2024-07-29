@@ -41,7 +41,7 @@ export function createComponentInstance(vnode) {
     attrs: {}, // 用户传递的属性(vnode.props) - 组件接收的属性
     propsOptions: vnode.type.props, // 组件接收的属性定义（用户声明的哪些属性是组件的属性）
     proxy: null as any, // 组件代理对象，用来代理data、props、attrs，方便用户访问
-    component: null,
+    component: null, // Component组件跟元素组件不同，复用的是component
   };
   return instance;
 }
@@ -96,13 +96,15 @@ export function setupComponent(instance) {
   // 给代理对象赋值
   instance.proxy = new Proxy(instance, PublicInstanceProxyHandlers);
 
-  const { data, render } = vnode.type;
+  const { data: dataOptions, render } = vnode.type;
 
-  if (!isFunction(data)) {
-    warn('data options must be a function');
-    return;
+  if (dataOptions) {
+    if (!isFunction(dataOptions)) {
+      warn('The data option must be a function');
+    } else {
+      instance.data = reactive(dataOptions.call(instance.proxy));
+    }
   }
 
-  instance.data = reactive(data.call(instance.proxy));
   instance.render = render;
 }

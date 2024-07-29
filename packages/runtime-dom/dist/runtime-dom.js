@@ -701,6 +701,7 @@ function createComponentInstance(vnode) {
     proxy: null,
     // 组件代理对象，用来代理data、props、attrs，方便用户访问
     component: null
+    // Component组件跟元素组件不同，复用的是component
   };
   return instance;
 }
@@ -740,12 +741,14 @@ function setupComponent(instance) {
   const { vnode } = instance;
   initProps(instance, vnode.props);
   instance.proxy = new Proxy(instance, PublicInstanceProxyHandlers);
-  const { data, render: render2 } = vnode.type;
-  if (!isFunction(data)) {
-    warn("data options must be a function");
-    return;
+  const { data: dataOptions, render: render2 } = vnode.type;
+  if (dataOptions) {
+    if (!isFunction(dataOptions)) {
+      warn("The data option must be a function");
+    } else {
+      instance.data = reactive(dataOptions.call(instance.proxy));
+    }
   }
-  instance.data = reactive(data.call(instance.proxy));
   instance.render = render2;
 }
 
@@ -942,10 +945,42 @@ function createRenderer(renderOptions2) {
     setupComponent(instance);
     setupRenderEffect(instance, container, anchor);
   };
+  const hasPropsChange = (prevProps, nextProps) => {
+    const prevPropsLength = Object.keys(prevProps).length;
+    const nextPropsLength = Object.keys(nextProps).length;
+    if (prevPropsLength !== nextPropsLength) {
+      return true;
+    }
+    for (const key in nextProps) {
+      if (!hasOwn(prevProps, key) || prevProps[key] !== nextProps[key]) {
+        return true;
+      }
+    }
+    return false;
+  };
+  const updateProps = (instance, prevProps, nextProps) => {
+    if (hasPropsChange(prevProps, nextProps)) {
+      for (const key in nextProps) {
+        instance.props[key] = nextProps[key];
+      }
+      for (const key in instance.props) {
+        if (!hasOwn(key, nextProps)) {
+          delete prevProps[key];
+        }
+      }
+    }
+  };
+  const updateComponent = (n1, n2) => {
+    const instance = n2.component = n1.component;
+    const prevProps = n1.props;
+    const nextProps = n2.props;
+    updateProps(instance, prevProps, nextProps);
+  };
   const processComponent = (n1, n2, container, anchor) => {
     if (n1 === null) {
       mountComponent(n2, container, anchor);
     } else {
+      updateComponent(n1, n2);
     }
   };
   const processText = (n1, n2, container) => {

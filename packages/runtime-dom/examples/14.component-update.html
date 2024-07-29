@@ -1,0 +1,72 @@
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport"
+        content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>Component update</title>
+</head>
+<body>
+<div id="app"></div>
+<script type="module">
+  // import { createRenderer, render, h, Text, Fragment } from '/node_modules/@vue/runtime-dom/dist/runtime-dom.esm-browser.js';
+  import { render, h, Text, Fragment } from '../dist/runtime-dom.js';
+
+  /*
+  * 组件更新3种方式：
+  *   1. 自身状态。data
+  *   2. 属性。props
+  *   3. 插槽。
+  * */
+
+  /*
+  VueComponent按照component渲染流程进行渲染。
+  VueComponent依赖flag。
+  点击按钮，flag值发生变化。
+  当flag发生变化时，会触发执行VueComponent的effect的scheduler，组件重新渲染，进行patch。
+  patch时会循环Fragment下的子节点重新渲染。
+  button按照元素的更新逻辑进行更新。
+  ChildComponent因props发生变化，则会按照组件的更新逻辑进行更新。走updateComponent逻辑。
+  ChildComponent更新逻辑：判断props是否发生变化，props变化时更新props的值，因props是响应式数据从而触发组件重新渲染。
+
+
+  以上组件示范，父组件通过flag更新子组件的prop时，flag变化触发父组件更新逻辑，走父组件effect的scheduler，进行父组件的patch。
+  循环比对子节点，比对到ChildComponent子组件时，会走ChildComponent的patch(子组件老vnode, 子组件新vnode)逻辑。子组件vnode的props发生变化。
+  （此时还不会直接走ChildComponent组件的effect的scheduler，因为组件的响应式数据没有发生变化。组件自身data发生变化和props/slots变化触发组件更新逻辑不同）
+  此时比对子组件props的变化，prop发生变化时，更新子组件实例instance上的响应式prop值才触发组件的effect的scheduler流程。
+   */
+
+  const ChildComponent = {
+    props: {
+      address: String
+    },
+    render() {
+      return h(Text, this.address);
+    }
+  };
+
+  const VueComponent = {
+    data() {
+      return {
+        flag: true,
+      };
+    },
+    render() {
+      return h(Fragment, [
+        h('button', {
+          onClick: () => {
+            this.flag = !this.flag;
+          }
+        }, `点击切换城市`),
+        h(ChildComponent, { address: this.flag ? '北京' : '上海' })
+      ]);
+    }
+  };
+
+  render(h(VueComponent), app);
+
+
+
+</script>
+</body>
+</html>

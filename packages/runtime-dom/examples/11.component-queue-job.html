@@ -19,7 +19,7 @@
         age: 18,
       };
     },
-    render() {
+    render() { // 这里 render 生成的是subTree
       setTimeout(() => {
         this.age++;
         this.age++; // 同时多次更新状态：内部通过事件环机制，延迟更新操作。宏任务 -> 微任务
@@ -33,7 +33,6 @@
   };
 
   // h(VueComponent) 生成的是vnode
-  // render(h(VueComponent), app) 生成的是subTree
   render(h(VueComponent), app);
 
 </script>

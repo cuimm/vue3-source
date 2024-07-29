@@ -300,6 +300,7 @@ export function createRenderer(renderOptions) {
   const setupRenderEffect = (instance, container, anchor) => {
     const { render } = instance;
 
+    // 组件更新逻辑。组件自身的状态(data)发生变化直接走该逻辑，外界传递的props的变化会先更新instance.props再走该逻辑。
     const componentUpdateFn = () => {
       if (!instance.isMounted) {
         const subTree = render.call(instance.proxy, instance.proxy);
@@ -339,6 +340,58 @@ export function createRenderer(renderOptions) {
   };
 
   /**
+   * 比对前后属性是否发生变化
+   * @param prevProps
+   * @param nextProps
+   */
+  const hasPropsChange = (prevProps, nextProps) => {
+    const prevPropsLength = Object.keys(prevProps).length;
+    const nextPropsLength = Object.keys(nextProps).length;
+    if (prevPropsLength !== nextPropsLength) {
+      return true;
+    }
+    for (const key in nextProps) {
+      if (!hasOwn(prevProps, key) || prevProps[key] !== nextProps[key]) {
+        return true;
+      }
+    }
+    return false;
+  };
+
+  /**
+   * 更新props
+   * @param instance
+   * @param prevProps
+   * @param nextProps
+   */
+  const updateProps = (instance, prevProps, nextProps) => {
+    if (hasPropsChange(prevProps, nextProps)) {
+      for (const key in nextProps) {
+        instance.props[key] = nextProps[key];
+      }
+      for (const key in instance.props) {
+        if (!hasOwn(key, nextProps)) {
+          delete prevProps[key];
+        }
+      }
+    }
+  };
+
+  /**
+   * 组件更新
+   * @param n1
+   * @param n2
+   */
+  const updateComponent = (n1, n2) => {
+    const instance = (n2.component = n1.component); // 复用组件实例
+
+    const prevProps = n1.props;
+    const nextProps = n2.props;
+
+    updateProps(instance, prevProps, nextProps);
+  };
+
+  /**
    * 处理Component
    * @param n1
    * @param n2
@@ -349,7 +402,7 @@ export function createRenderer(renderOptions) {
     if (n1 === null) {
       mountComponent(n2, container, anchor);
     } else {
-      // todo...
+      updateComponent(n1, n2);
     }
   };
 
