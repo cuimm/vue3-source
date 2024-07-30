@@ -1,0 +1,47 @@
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport"
+        content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>Slot 插槽</title>
+</head>
+<body>
+<div id="app"></div>
+<script type="module">
+  // import { createRenderer, render, h, Text, Fragment } from '/node_modules/@vue/runtime-dom/dist/runtime-dom.esm-browser.js';
+  import { render, h, Text, Fragment, ref, reactive } from '../dist/runtime-dom.js';
+
+  const ChildComponent = {
+    setup(props, { slots }) {
+      console.log('slots：', slots);
+      return () => {
+        return h(Fragment, [
+          slots.header(),
+          slots.default(),
+          slots.footer(),
+        ])
+      };
+    },
+    render(proxy) {
+      console.log('$slots: ', proxy.$slots);
+      return h(Fragment, [proxy.$slots.header('Hi！'), proxy.$slots.footer(), proxy.$slots.default()])
+    }
+  };
+  const ParentComponent = {
+    setup() {
+      return () => {
+        return h(ChildComponent, null, {
+          default: () => h(Text, 'default插槽'),
+          header: (arg) => h('header', (arg || '') + 'header插槽'),
+          footer: () => h('footer', 'footer插槽'),
+        });
+      };
+    }
+  };
+
+  render(h(ParentComponent), app);
+
+</script>
+</body>
+</html>

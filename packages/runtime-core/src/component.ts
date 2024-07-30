@@ -1,4 +1,4 @@
-import { hasOwn, isFunction, warn } from '@vue/shared';
+import { hasOwn, isFunction, ShapeFlags, warn } from '@vue/shared';
 import { proxyRefs, reactive } from '@vue/reactivity';
 
 /**
@@ -27,6 +27,19 @@ const initProps = (instance, rawProps) => {
 };
 
 /**
+ * 初始化slots
+ * @param instance
+ * @param children
+ */
+const initSlots = (instance, children) => {
+  if (instance.vnode.shapeFlag & ShapeFlags.SLOTS_CHILDREN) {
+    instance.slots = children;
+  } else {
+    instance.slots = {};
+  }
+};
+
+/**
  * 创建组件实力
  * @param vnode 组件虚拟节点
  */
@@ -39,6 +52,7 @@ export function createComponentInstance(vnode) {
     update: null as any, // 组件的更新函数
     props: {}, // 组件接收的属性
     attrs: {}, // 用户传递的属性(vnode.props) - 组件接收的属性
+    slots: {}, // 插槽
     propsOptions: vnode.type.props, // 组件接收的属性定义（用户声明的哪些属性是组件的属性）
     proxy: null as any, // 组件代理对象，用来代理data、props、attrs，方便用户访问
     component: null, // Component组件跟元素组件不同，复用的是component
@@ -53,6 +67,7 @@ const publicPropertiesMap = {
   $: instance => instance,
   $data: instance => instance.data,
   $attrs: instance => instance.attrs,
+  $slots: instance => instance.slots,
 };
 
 // 组件数据代理（data、props...）
@@ -101,6 +116,9 @@ export function setupComponent(instance) {
   // 初始化props
   initProps(instance, vnode.props);
 
+  // 初始化slots。对于component组件来说，子节点就是插槽
+  initSlots(instance, vnode.children);
+
   // 给代理对象赋值
   instance.proxy = new Proxy(instance, PublicInstanceProxyHandlers);
 
@@ -109,7 +127,7 @@ export function setupComponent(instance) {
   // 处理 setup
   if (setup) {
     const setupContext = {
-      // todo...
+      slots: instance.slots,
     };
     const setupResult = setup(instance.props, setupContext);
     if (isFunction(setupResult)) {

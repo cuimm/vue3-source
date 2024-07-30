@@ -48,6 +48,8 @@ export function createVNode(type, props, children?) {
   if (children) {
     if (isArray(children)) {
       vnode.shapeFlag |= ShapeFlags.ARRAY_CHILDREN;
+    } else if (isObject(children)) {
+      vnode.shapeFlag |= ShapeFlags.SLOTS_CHILDREN;
     } else {
       vnode.children = String(children); // 文本统一转成字符串
       vnode.shapeFlag |= ShapeFlags.TEXT_CHILDREN;

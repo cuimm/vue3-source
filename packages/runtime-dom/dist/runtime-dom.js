@@ -638,6 +638,8 @@ function createVNode(type, props, children) {
   if (children) {
     if (isArray(children)) {
       vnode.shapeFlag |= 16 /* ARRAY_CHILDREN */;
+    } else if (isObject(children)) {
+      vnode.shapeFlag |= 32 /* SLOTS_CHILDREN */;
     } else {
       vnode.children = String(children);
       vnode.shapeFlag |= 8 /* TEXT_CHILDREN */;
@@ -683,6 +685,13 @@ var initProps = (instance, rawProps) => {
   instance.props = reactive(props);
   instance.attrs = attrs;
 };
+var initSlots = (instance, children) => {
+  if (instance.vnode.shapeFlag & 32 /* SLOTS_CHILDREN */) {
+    instance.slots = children;
+  } else {
+    instance.slots = {};
+  }
+};
 function createComponentInstance(vnode) {
   const instance = {
     data: null,
@@ -699,6 +708,8 @@ function createComponentInstance(vnode) {
     // 组件接收的属性
     attrs: {},
     // 用户传递的属性(vnode.props) - 组件接收的属性
+    slots: {},
+    // 插槽
     propsOptions: vnode.type.props,
     // 组件接收的属性定义（用户声明的哪些属性是组件的属性）
     proxy: null,
@@ -713,7 +724,8 @@ function createComponentInstance(vnode) {
 var publicPropertiesMap = {
   $: (instance) => instance,
   $data: (instance) => instance.data,
-  $attrs: (instance) => instance.attrs
+  $attrs: (instance) => instance.attrs,
+  $slots: (instance) => instance.slots
 };
 var PublicInstanceProxyHandlers = {
   get(target, key) {
@@ -752,11 +764,12 @@ var PublicInstanceProxyHandlers = {
 function setupComponent(instance) {
   const { vnode } = instance;
   initProps(instance, vnode.props);
+  initSlots(instance, vnode.children);
   instance.proxy = new Proxy(instance, PublicInstanceProxyHandlers);
   const { data: dataOptions, render: render2, setup } = vnode.type;
   if (setup) {
     const setupContext = {
-      // todo...
+      slots: instance.slots
     };
     const setupResult = setup(instance.props, setupContext);
     if (isFunction(setupResult)) {
