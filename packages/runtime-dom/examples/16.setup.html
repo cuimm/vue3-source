@@ -1,0 +1,67 @@
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport"
+        content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>setup</title>
+</head>
+<body>
+<div id="app"></div>
+<div id="app2"></div>
+<script type="module">
+  // import { createRenderer, render, h, Text, Fragment, ref } from '/node_modules/@vue/runtime-dom/dist/runtime-dom.esm-browser.js';
+  import { render, h, Text, Fragment, ref, reactive } from '../dist/runtime-dom.js';
+
+  /*
+  * setup函数
+  *
+  * 每个组件只会执行一次，在setup函数内可以放compositionApi（reactive、ref等）
+  * 解决组件（选项式api）反复横跳问题
+  * setup可以返回render函数
+  * setup可以返回render函数，也可以返回对象。返回的对象可以在render函数内通过参数获取到
+  * */
+
+
+  // 1. setup返回render函数。
+  // 优先级setup高于render
+  const VueComponent = {
+    setup(props, { emit, attrs, expose, slots }) {
+      // 此处可以提供渲染逻辑...
+      const num = ref(1);
+
+      setTimeout(() => {
+        num.value = 100;
+      }, 3000);
+
+      return () => {
+        return h('div', ['hello', num.value]); // 模版内使用ref值会自动解包
+      };
+    },
+    render() {
+      return h('div', 'world');
+    }
+  };
+  render(h(VueComponent), app);
+
+
+  // 2. setup返回对象
+  const VueComponent2 = {
+    setup() {
+      const obj = { name: 'cuimm', age: 18, };
+      setTimeout(() => {
+        obj.name = 'hello'; // 更改setupState不会触发模版更新
+      }, 3000);
+      return obj;
+    },
+    render(proxy) {
+      console.log('setup返回对象：', proxy === this, proxy); // true
+      return h('div', {}, `${proxy.name}` + `${this.age}`);
+    }
+  };
+  render(h(VueComponent2), app2);
+
+
+</script>
+</body>
+</html>

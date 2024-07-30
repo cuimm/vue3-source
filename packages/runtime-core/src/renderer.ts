@@ -1,7 +1,7 @@
-import { hasOwn, isUndefined, ShapeFlags, warn } from '@vue/shared';
+import { hasOwn, isArray, isNumber, isString, isUndefined, ShapeFlags, warn } from '@vue/shared';
 import { reactive, ReactiveEffect } from '@vue/reactivity';
 import getSequence from './seq';
-import { Fragment, Text, isSameVNode } from './vnode';
+import { Fragment, Text, isSameVNode, createVNode } from './vnode';
 import { queueJob } from './scheduler';
 import { createComponentInstance, setupComponent } from './component';
 
@@ -19,11 +19,29 @@ export function createRenderer(renderOptions) {
   } = renderOptions;
 
   /**
+   * 子组件是数组，将 字符串/数字 的子组件转成Text组件
+   * @param children
+   */
+  const normalize = (children) => {
+    if (isArray(children)) {
+      for (let index = 0; index < children.length; index++) {
+        const child = children[index];
+        if (isString(child) || isNumber(child)) {
+          children[index] = createVNode(Text, null, String(child));
+        }
+      }
+    }
+    return children;
+  };
+
+  /**
    * 递归渲染子节点
    * @param children
    * @param container
    */
   const mountChildren = (children, container) => {
+    normalize(children);
+
     for (let index = 0; index < children.length; index++) {
       patch(null, children[index], container);
     }
@@ -218,7 +236,7 @@ export function createRenderer(renderOptions) {
    */
   const patchChildren = (n1, n2, el) => {
     const c1 = n1.children;
-    const c2 = n2.children;
+    const c2 = normalize(n2.children);
 
     const prevShapeFlag = n1.shapeFlag;
     const shapeFlag = n2.shapeFlag;

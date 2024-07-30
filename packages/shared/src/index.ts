@@ -16,6 +16,10 @@ export function isString(value) {
   return typeof value === 'string';
 }
 
+export function isNumber(value) {
+  return typeof value === 'number';
+}
+
 export function isObject(value) {
   return value !== null && typeof value === 'object';
 }

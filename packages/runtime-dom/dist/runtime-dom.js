@@ -41,6 +41,9 @@ function isUndefined(value) {
 function isString(value) {
   return typeof value === "string";
 }
+function isNumber(value) {
+  return typeof value === "number";
+}
 function isObject(value) {
   return value !== null && typeof value === "object";
 }
@@ -700,8 +703,10 @@ function createComponentInstance(vnode) {
     // 组件接收的属性定义（用户声明的哪些属性是组件的属性）
     proxy: null,
     // 组件代理对象，用来代理data、props、attrs，方便用户访问
-    component: null
+    component: null,
     // Component组件跟元素组件不同，复用的是component
+    setupState: {}
+    // setup返回的对象
   };
   return instance;
 }
@@ -712,12 +717,15 @@ var publicPropertiesMap = {
 };
 var PublicInstanceProxyHandlers = {
   get(target, key) {
-    const { data, props } = target;
+    const { data, props, setupState } = target;
     if (data && hasOwn(data, key)) {
       return data[key];
     }
     if (props && hasOwn(props, key)) {
       return props[key];
+    }
+    if (setupState && hasOwn(setupState, key)) {
+      return setupState[key];
     }
     const getter = publicPropertiesMap[key];
     if (getter) {
@@ -725,7 +733,7 @@ var PublicInstanceProxyHandlers = {
     }
   },
   set(target, key, value) {
-    const { data, props } = target;
+    const { data, props, setupState } = target;
     if (data && hasOwn(data, key)) {
       data[key] = value;
       return true;
@@ -734,6 +742,10 @@ var PublicInstanceProxyHandlers = {
       warn("props are readonly!");
       return false;
     }
+    if (setupState && hasOwn(setupState, key)) {
+      setupState[key] = value;
+      return true;
+    }
     return true;
   }
 };
@@ -741,7 +753,18 @@ function setupComponent(instance) {
   const { vnode } = instance;
   initProps(instance, vnode.props);
   instance.proxy = new Proxy(instance, PublicInstanceProxyHandlers);
-  const { data: dataOptions, render: render2 } = vnode.type;
+  const { data: dataOptions, render: render2, setup } = vnode.type;
+  if (setup) {
+    const setupContext = {
+      // todo...
+    };
+    const setupResult = setup(instance.props, setupContext);
+    if (isFunction(setupResult)) {
+      instance.render = setupResult;
+    } else {
+      instance.setupState = proxyRefs(setupResult);
+    }
+  }
   if (dataOptions) {
     if (!isFunction(dataOptions)) {
       warn("The data option must be a function");
@@ -749,7 +772,9 @@ function setupComponent(instance) {
       instance.data = reactive(dataOptions.call(instance.proxy));
     }
   }
-  instance.render = render2;
+  if (!instance.render) {
+    instance.render = render2;
+  }
 }
 
 // packages/runtime-core/src/renderer.ts
@@ -765,7 +790,19 @@ function createRenderer(renderOptions2) {
     nextSibling: hostNextSibling,
     patchProp: hostPatchProp
   } = renderOptions2;
+  const normalize = (children) => {
+    if (isArray(children)) {
+      for (let index = 0; index < children.length; index++) {
+        const child = children[index];
+        if (isString(child) || isNumber(child)) {
+          children[index] = createVNode(Text, null, String(child));
+        }
+      }
+    }
+    return children;
+  };
   const mountChildren = (children, container) => {
+    normalize(children);
     for (let index = 0; index < children.length; index++) {
       patch(null, children[index], container);
     }
@@ -881,7 +918,7 @@ function createRenderer(renderOptions2) {
   };
   const patchChildren = (n1, n2, el) => {
     const c1 = n1.children;
-    const c2 = n2.children;
+    const c2 = normalize(n2.children);
     const prevShapeFlag = n1.shapeFlag;
     const shapeFlag = n2.shapeFlag;
     if (shapeFlag & 8 /* TEXT_CHILDREN */) {

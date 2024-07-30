@@ -1,5 +1,5 @@
 import { hasOwn, isFunction, warn } from '@vue/shared';
-import { reactive } from '@vue/reactivity';
+import { proxyRefs, reactive } from '@vue/reactivity';
 
 /**
  * 初始化props
@@ -42,6 +42,7 @@ export function createComponentInstance(vnode) {
     propsOptions: vnode.type.props, // 组件接收的属性定义（用户声明的哪些属性是组件的属性）
     proxy: null as any, // 组件代理对象，用来代理data、props、attrs，方便用户访问
     component: null, // Component组件跟元素组件不同，复用的是component
+    setupState: {}, // setup返回的对象
   };
   return instance;
 }
@@ -57,12 +58,15 @@ const publicPropertiesMap = {
 // 组件数据代理（data、props...）
 const PublicInstanceProxyHandlers = {
   get(target, key) {
-    const { data, props } = target;
+    const { data, props, setupState } = target;
     if (data && hasOwn(data, key)) {
       return data[key];
     }
     if (props && hasOwn(props, key)) {
       return props[key];
+    }
+    if (setupState && hasOwn(setupState, key)) {
+      return setupState[key];
     }
     const getter = publicPropertiesMap[key];
     if (getter) {
@@ -70,7 +74,7 @@ const PublicInstanceProxyHandlers = {
     }
   },
   set(target, key, value) {
-    const { data, props } = target;
+    const { data, props, setupState } = target;
     if (data && hasOwn(data, key)) {
       data[key] = value;
       return true;
@@ -78,6 +82,10 @@ const PublicInstanceProxyHandlers = {
     if (props && hasOwn(props, key)) {
       warn('props are readonly!');
       return false;
+    }
+    if (setupState && hasOwn(setupState, key)) {
+      setupState[key] = value;
+      return true;
     }
     return true;
   }
@@ -96,8 +104,22 @@ export function setupComponent(instance) {
   // 给代理对象赋值
   instance.proxy = new Proxy(instance, PublicInstanceProxyHandlers);
 
-  const { data: dataOptions, render } = vnode.type;
+  const { data: dataOptions, render, setup } = vnode.type;
 
+  // 处理 setup
+  if (setup) {
+    const setupContext = {
+      // todo...
+    };
+    const setupResult = setup(instance.props, setupContext);
+    if (isFunction(setupResult)) {
+      instance.render = setupResult;
+    } else {
+      instance.setupState = proxyRefs(setupResult); // 给返回的值做ref解包
+    }
+  }
+
+  // 处理data
   if (dataOptions) {
     if (!isFunction(dataOptions)) {
       warn('The data option must be a function');
@@ -106,5 +128,8 @@ export function setupComponent(instance) {
     }
   }
 
-  instance.render = render;
+  // setup返回的render函数优先级比外部提供的render函数高
+  if (!instance.render) {
+    instance.render = render;
+  }
 }
