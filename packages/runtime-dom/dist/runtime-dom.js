@@ -976,7 +976,7 @@ function createRenderer(renderOptions2) {
         instance.props[key] = nextProps[key];
       }
       for (const key in instance.props) {
-        if (!hasOwn(key, nextProps)) {
+        if (!hasOwn(nextProps, key)) {
           delete prevProps[key];
         }
       }
