@@ -1,0 +1,48 @@
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport"
+        content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>Document</title>
+</head>
+<body>
+<div id="app"></div>
+<script type="module">
+  // import { createRenderer, render, h, Text, Fragment } from '/node_modules/@vue/runtime-dom/dist/runtime-dom.esm-browser.js';
+  import { render, h, Text, Fragment } from '../dist/runtime-dom.js';
+
+  /**
+   * 属性引起的组件更新，在updateComponent方法内，给instance上增加next属性，保存最新的虚拟节点。
+   * effect逻辑通过判断instance内是否有next属性来判断是否是基于属性的更新。
+   * 这样可以将基于状态和基于属性的更新逻辑统一。
+   */
+
+  const ChildComponent = {
+    props: {
+      address: String
+    },
+    render() {
+      return h(Text, this.address);
+    }
+  };
+
+  const VueComponent = {
+    data() {
+      return {
+        flag: true,
+      }
+    },
+    render() {
+      return h(Fragment, [
+        h('button', { onClick: () => { this.flag = !this.flag } }, '点击切换城市'),
+        h(ChildComponent, { address: this.flag ? '北京' : '上海' })
+      ]);
+    }
+  };
+
+  render(h(VueComponent), app);
+
+</script>
+</body>
+</html>

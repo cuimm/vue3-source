@@ -292,6 +292,17 @@ export function createRenderer(renderOptions) {
   };
 
   /**
+   * 基于 属性/插槽 的更新
+   * @param instance
+   * @param next
+   */
+  const updateComponentPreRender = (instance, next) => {
+    instance.next = null; // 清空next属性
+    instance.vnode = next; // 更新新的虚拟节点
+    updateProps(instance, instance.props, next.props); // 更新props
+  };
+
+  /**
    * 创建组件effect
    * @param instance
    * @param container
@@ -308,6 +319,13 @@ export function createRenderer(renderOptions) {
         instance.isMounted = true;
         instance.subTree = subTree;
       } else {
+        const { next } = instance;
+
+        if (next) {
+          /* 有next属性，说明是属性或者插槽更新 */
+          updateComponentPreRender(instance, next);
+        }
+
         const subTree = render.call(instance.proxy, instance.proxy);
         patch(instance.subTree, subTree, container, anchor);
         instance.subTree = subTree;
@@ -345,6 +363,9 @@ export function createRenderer(renderOptions) {
    * @param nextProps
    */
   const hasPropsChange = (prevProps, nextProps) => {
+    if (prevProps === nextProps) {
+      return false;
+    }
     const prevPropsLength = Object.keys(prevProps).length;
     const nextPropsLength = Object.keys(nextProps).length;
     if (prevPropsLength !== nextPropsLength) {
@@ -378,6 +399,24 @@ export function createRenderer(renderOptions) {
   };
 
   /**
+   * 监测组件是否需要重新渲染
+   * @param n1
+   * @param n2
+   */
+  const shouldComponentUpdate = (n1, n2) => {
+    const { props: prevProps, children: prevChildren } = n1;
+    const { props: nextProps, children: nextChildren } = n2;
+
+    // 有插槽，直接走重新渲染
+    if (prevChildren || nextChildren) {
+      return true;
+    }
+
+    // 属性不一致，重新渲染
+    return hasPropsChange(prevProps, nextProps);
+  };
+
+  /**
    * 组件更新
    * @param n1
    * @param n2
@@ -385,10 +424,10 @@ export function createRenderer(renderOptions) {
   const updateComponent = (n1, n2) => {
     const instance = (n2.component = n1.component); // 复用组件实例
 
-    const prevProps = n1.props;
-    const nextProps = n2.props;
-
-    updateProps(instance, prevProps, nextProps);
+    if (shouldComponentUpdate(n1, n2)) {
+      instance.next = n2; // 调用update时如果有next属性，则说明是属性更新，否则是状态更新
+      instance.update(); // 统一组件更新逻辑
+    }
   };
 
   /**
@@ -400,9 +439,9 @@ export function createRenderer(renderOptions) {
    */
   const processComponent = (n1, n2, container, anchor) => {
     if (n1 === null) {
-      mountComponent(n2, container, anchor);
+      mountComponent(n2, container, anchor); // 组件初渲染
     } else {
-      updateComponent(n1, n2);
+      updateComponent(n1, n2); // 组件更新（基于 属性/插槽 的更新）
     }
   };
 

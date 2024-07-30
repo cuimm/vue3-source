@@ -922,6 +922,11 @@ function createRenderer(renderOptions2) {
       patchElement(n1, n2, container);
     }
   };
+  const updateComponentPreRender = (instance, next) => {
+    instance.next = null;
+    instance.vnode = next;
+    updateProps(instance, instance.props, next.props);
+  };
   const setupRenderEffect = (instance, container, anchor) => {
     const { render: render3 } = instance;
     const componentUpdateFn = () => {
@@ -931,6 +936,10 @@ function createRenderer(renderOptions2) {
         instance.isMounted = true;
         instance.subTree = subTree;
       } else {
+        const { next } = instance;
+        if (next) {
+          updateComponentPreRender(instance, next);
+        }
         const subTree = render3.call(instance.proxy, instance.proxy);
         patch(instance.subTree, subTree, container, anchor);
         instance.subTree = subTree;
@@ -946,6 +955,9 @@ function createRenderer(renderOptions2) {
     setupRenderEffect(instance, container, anchor);
   };
   const hasPropsChange = (prevProps, nextProps) => {
+    if (prevProps === nextProps) {
+      return false;
+    }
     const prevPropsLength = Object.keys(prevProps).length;
     const nextPropsLength = Object.keys(nextProps).length;
     if (prevPropsLength !== nextPropsLength) {
@@ -970,11 +982,20 @@ function createRenderer(renderOptions2) {
       }
     }
   };
+  const shouldComponentUpdate = (n1, n2) => {
+    const { props: prevProps, children: prevChildren } = n1;
+    const { props: nextProps, children: nextChildren } = n2;
+    if (prevChildren || nextChildren) {
+      return true;
+    }
+    return hasPropsChange(prevProps, nextProps);
+  };
   const updateComponent = (n1, n2) => {
     const instance = n2.component = n1.component;
-    const prevProps = n1.props;
-    const nextProps = n2.props;
-    updateProps(instance, prevProps, nextProps);
+    if (shouldComponentUpdate(n1, n2)) {
+      instance.next = n2;
+      instance.update();
+    }
   };
   const processComponent = (n1, n2, container, anchor) => {
     if (n1 === null) {
