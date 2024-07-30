@@ -1,0 +1,47 @@
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport"
+        content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>setupState</title>
+</head>
+<body>
+<div id="app"></div>
+<script type="module">
+  // import { createRenderer, render, h, Text, Fragment } from '/node_modules/@vue/runtime-dom/dist/runtime-dom.esm-browser.js';
+  import { render, h, Text, Fragment, ref, reactive } from '../dist/runtime-dom.js';
+
+  const ChildComponent = {
+    setup(props, { attrs, slots, emit, expose }) {
+      return () => {
+        return h('button', { onClick: () => emit('click') }, '点我啊～')
+      };
+    }
+  };
+
+  const VueComponent = {
+    props: {
+      name: String,
+    },
+    setup(props, { attrs, slots, emit, expose }) {
+      console.log('props: ', props); // { props：cuimm }
+      console.log('attrs: ', attrs); // { attrs：18, onMyEvent: f }
+
+      expose({ address: '北京' }); // 将传递的对象暴露到instance上
+
+      return (proxy) => {
+        return h(ChildComponent, { onClick: () => emit('myEvent', proxy.name) });
+      };
+    }
+  };
+
+  render(h(VueComponent, { name: 'cuimm', age: 18, onMyEvent: (name) => alert('myEvent：' + name) }), app);
+
+  // 卸载component组件
+  setTimeout(() => {
+    render(null, app);
+  }, 3000);
+</script>
+</body>
+</html>

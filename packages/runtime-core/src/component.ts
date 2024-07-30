@@ -127,7 +127,16 @@ export function setupComponent(instance) {
   // 处理 setup
   if (setup) {
     const setupContext = {
+      attrs: instance.attrs,
       slots: instance.slots,
+      emit(event, ...payload) {
+        const eventName = `on${event[0].toUpperCase()}${event.slice(1)}`;
+        const handler = instance.vnode.props[eventName];
+        handler && handler(...payload);
+      },
+      expose(value) {
+        instance.exposed = value; // 将数据暴露到instance上
+      }
     };
     const setupResult = setup(instance.props, setupContext);
     if (isFunction(setupResult)) {

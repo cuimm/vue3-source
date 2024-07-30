@@ -536,9 +536,11 @@ export function createRenderer(renderOptions) {
    * @param vnode
    */
   const unmount = vnode => {
-    const { type, children } = vnode;
+    const { type, shapeFlag, children } = vnode;
     if (type === Fragment) { // 卸载Fragment组件
       unmountChildren(children);
+    } else if (shapeFlag & ShapeFlags.COMPONENT) { // 卸载component组件
+      unmount(vnode.component.subTree);
     } else {
       hostRemove(vnode.el);
     }

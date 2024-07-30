@@ -769,7 +769,16 @@ function setupComponent(instance) {
   const { data: dataOptions, render: render2, setup } = vnode.type;
   if (setup) {
     const setupContext = {
-      slots: instance.slots
+      attrs: instance.attrs,
+      slots: instance.slots,
+      emit(event, ...payload) {
+        const eventName = `on${event[0].toUpperCase()}${event.slice(1)}`;
+        const handler = instance.vnode.props[eventName];
+        handler && handler(...payload);
+      },
+      expose(value) {
+        instance.exposed = value;
+      }
     };
     const setupResult = setup(instance.props, setupContext);
     if (isFunction(setupResult)) {
@@ -1097,9 +1106,11 @@ function createRenderer(renderOptions2) {
     }
   };
   const unmount = (vnode) => {
-    const { type, children } = vnode;
+    const { type, shapeFlag, children } = vnode;
     if (type === Fragment) {
       unmountChildren(children);
+    } else if (shapeFlag & 6 /* COMPONENT */) {
+      unmount(vnode.component.subTree);
     } else {
       hostRemove(vnode.el);
     }
