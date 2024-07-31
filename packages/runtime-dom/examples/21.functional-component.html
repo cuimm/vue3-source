@@ -1,0 +1,26 @@
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport"
+        content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>functional component</title>
+</head>
+<body>
+<div id="app"></div>
+<script type="module">
+  // import { ref, render, h, Fragment, Text, getCurrentInstance, onBeforeMount, onMounted, onBeforeUpdate, onUpdated } from '/node_modules/@vue/runtime-dom/dist/runtime-dom.esm-browser.js';
+  import { render, h, ref, Fragment, getCurrentInstance, onBeforeMount, onMounted, onBeforeUpdate, onUpdated } from '../dist/runtime-dom.js';
+
+  // 函数式组件
+  // vue3中不建议使用，没有任何的优化
+
+  const functionalComponent = function (props) {
+    return h('div', props.a + props.b);
+  }
+
+  render(h(functionalComponent, { a: 1, b: 2 }), app);
+
+</script>
+</body>
+</html>

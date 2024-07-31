@@ -1,4 +1,4 @@
-import { isArray, isObject, isString, ShapeFlags } from '@vue/shared';
+import { isArray, isFunction, isObject, isString, ShapeFlags } from '@vue/shared';
 
 export const Text = Symbol('Text');
 
@@ -29,11 +29,13 @@ export function isSameVNode(n1, n2) {
  */
 export function createVNode(type, props, children?) {
 
-  let shapeFlag: any = isString(type)
+  const shapeFlag: any = isString(type)
     ? ShapeFlags.ELEMENT // 元素
     : isObject(type)
       ? ShapeFlags.STATEFUL_COMPONENT // 组件
-      : 0;
+      : isFunction(type)
+        ? ShapeFlags.FUNCTIONAL_COMPONENT // 函数式组件
+        : 0;
 
   const vnode = {
     __v_isVNode: true,

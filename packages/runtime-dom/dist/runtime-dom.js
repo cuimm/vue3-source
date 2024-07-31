@@ -623,7 +623,7 @@ function isSameVNode(n1, n2) {
   return n1.type === n2.type && n1.key === n2.key;
 }
 function createVNode(type, props, children) {
-  let shapeFlag = isString(type) ? 1 /* ELEMENT */ : isObject(type) ? 4 /* STATEFUL_COMPONENT */ : 0;
+  const shapeFlag = isString(type) ? 1 /* ELEMENT */ : isObject(type) ? 4 /* STATEFUL_COMPONENT */ : isFunction(type) ? 2 /* FUNCTIONAL_COMPONENT */ : 0;
   const vnode = {
     __v_isVNode: true,
     type,
@@ -1033,6 +1033,14 @@ function createRenderer(renderOptions2) {
     instance.vnode = next;
     updateProps(instance, instance.props, next.props);
   };
+  const renderComponent = (instance) => {
+    const { vnode, render: render3, proxy, attrs } = instance;
+    if (vnode.shapeFlag & 4 /* STATEFUL_COMPONENT */) {
+      return render3.call(proxy, proxy);
+    } else {
+      return vnode.type(attrs);
+    }
+  };
   const setupRenderEffect = (instance, container, anchor) => {
     const { render: render3 } = instance;
     const componentUpdateFn = () => {
@@ -1042,7 +1050,7 @@ function createRenderer(renderOptions2) {
           invokeArrayFns(bm);
         }
         setCurrentInstance(instance);
-        const subTree = render3.call(instance.proxy, instance.proxy);
+        const subTree = renderComponent(instance);
         unsetCurrentInstance();
         patch(null, subTree, container, anchor);
         instance.isMounted = true;
@@ -1059,7 +1067,7 @@ function createRenderer(renderOptions2) {
           invokeArrayFns(bu);
         }
         setCurrentInstance(instance);
-        const subTree = render3.call(instance.proxy, instance.proxy);
+        const subTree = renderComponent(instance);
         unsetCurrentInstance();
         patch(instance.subTree, subTree, container, anchor);
         instance.subTree = subTree;

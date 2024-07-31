@@ -322,6 +322,19 @@ export function createRenderer(renderOptions) {
   };
 
   /**
+   * 渲染组件
+   * @param instance
+   */
+  const renderComponent = instance => {
+    const { vnode, render, proxy, attrs } = instance;
+    if (vnode.shapeFlag & ShapeFlags.STATEFUL_COMPONENT) {
+      return render.call(proxy, proxy);
+    } else {
+      return vnode.type(attrs); // 渲染函数式组件（函数式组件不建议使用，因为没有任何性能优化）
+    }
+  };
+
+  /**
    * 创建组件effect
    * @param instance
    * @param container
@@ -341,7 +354,7 @@ export function createRenderer(renderOptions) {
         }
 
         setCurrentInstance(instance);
-        const subTree = render.call(instance.proxy, instance.proxy);
+        const subTree = renderComponent(instance);
         unsetCurrentInstance();
 
         patch(null, subTree, container, anchor); // Component渲染完毕之后，el挂载到subTree上（n1.component.subTree.el）
@@ -366,7 +379,7 @@ export function createRenderer(renderOptions) {
         }
 
         setCurrentInstance(instance);
-        const subTree = render.call(instance.proxy, instance.proxy);
+        const subTree = renderComponent(instance);
         unsetCurrentInstance();
 
         patch(instance.subTree, subTree, container, anchor);
