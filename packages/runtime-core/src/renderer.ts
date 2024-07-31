@@ -1,9 +1,9 @@
 import { hasOwn, isArray, isNumber, isString, isUndefined, ShapeFlags, warn } from '@vue/shared';
-import { ReactiveEffect } from '@vue/reactivity';
+import { isRef, ReactiveEffect } from '@vue/reactivity';
 import getSequence from './seq';
 import { Fragment, Text, isSameVNode, createVNode } from './vnode';
 import { queueJob } from './scheduler';
-import { createComponentInstance, setupComponent } from './component';
+import { createComponentInstance, setCurrentInstance, setupComponent, unsetCurrentInstance } from './component';
 import { invokeArrayFns } from './apiLifecycle';
 
 export function createRenderer(renderOptions) {
@@ -340,7 +340,10 @@ export function createRenderer(renderOptions) {
           invokeArrayFns(bm);
         }
 
+        setCurrentInstance(instance);
         const subTree = render.call(instance.proxy, instance.proxy);
+        unsetCurrentInstance();
+
         patch(null, subTree, container, anchor); // Component渲染完毕之后，el挂载到subTree上（n1.component.subTree.el）
         instance.isMounted = true;
         instance.subTree = subTree;
@@ -362,7 +365,10 @@ export function createRenderer(renderOptions) {
           invokeArrayFns(bu);
         }
 
+        setCurrentInstance(instance);
         const subTree = render.call(instance.proxy, instance.proxy);
+        unsetCurrentInstance();
+
         patch(instance.subTree, subTree, container, anchor);
         instance.subTree = subTree;
 
@@ -518,6 +524,23 @@ export function createRenderer(renderOptions) {
   };
 
   /**
+   * 设置ref
+   * 1. 如果ref放在组件上，那么ref就是组件的(exposed || proxy代理对象)。
+   * 2. 如果ref放在dom上，那么ref就是dom元素
+   * @param rawRef
+   * @param vnode
+   */
+  const setRef = (rawRef, vnode) => {
+    const value = vnode.shapeFlag & ShapeFlags.STATEFUL_COMPONENT
+    ? vnode.component.exposed || vnode.component.proxy
+    : vnode.el;
+
+    if (isRef(rawRef)) {
+      rawRef.value = value;
+    }
+  };
+
+  /**
    * dom diff
    * @param n1
    * @param n2
@@ -536,7 +559,7 @@ export function createRenderer(renderOptions) {
       n1 = null;
     }
 
-    const { type, shapeFlag } = n2;
+    const { type, shapeFlag, ref } = n2;
     switch (type) {
       case Text:
         processText(n1, n2, container);
@@ -551,6 +574,10 @@ export function createRenderer(renderOptions) {
           processComponent(n1, n2, container, anchor);
         }
         break;
+    }
+
+    if (ref !== null) {
+      setRef(ref, n2);
     }
   };
 

@@ -1,0 +1,110 @@
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport"
+        content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>Document</title>
+</head>
+<body>
+<div id="app"></div>
+<script type="module">
+  // import { ref, render, h, Fragment, Text, getCurrentInstance, onBeforeMount, onMounted, onBeforeUpdate, onUpdated } from '/node_modules/@vue/runtime-dom/dist/runtime-dom.esm-browser.js';
+  import { render, h, ref, Fragment, getCurrentInstance, onBeforeMount, onMounted, onBeforeUpdate, onUpdated } from '../dist/runtime-dom.js';
+
+  /*
+  * 1. 如果ref放在组件a上，如果当前组件a有expose暴露的数据，那么ref是expose，否则是组件实例。
+  * 2. 如果放到dom元素上，指代的是dom元素
+  * */
+
+
+  // 1. ref 放在childComponent组件上，且childComponent组件没有exposed，那么ref就是当前组件实例
+  /*
+  const childComponent = {
+    props: {
+      num: Number,
+    },
+    setup(props, { attrs, expose, emit, slots }) {
+      return () => {
+        return h('h1', props.num);
+      };
+    },
+  };
+  const parentComponent = {
+    setup() {
+      const childRef = ref(null);
+
+      onMounted(() => {
+        console.log(childRef.value.num); // 100
+      });
+
+      return () => {
+        return h(childComponent, { ref: childRef, num: 100 });
+      };
+    }
+  };
+  render(h(parentComponent), app);
+*/
+
+
+  // 2. ref 放在组件上，且该组件有exposed，那么ref就是exposed
+/*
+  const childComponent = {
+    props: {
+      num: Number,
+    },
+    setup(props, { attrs, expose, emit, slots }) {
+      expose({
+        num: 200,
+      });
+
+      return () => {
+        const instance = getCurrentInstance();
+        return h(Fragment, [
+          h('h1', instance.exposed.num), // 200
+          h('h1', props.num), // 100
+        ]);
+      };
+    },
+  };
+
+  const parentComponent2 = {
+    setup() {
+      const childRef = ref(null);
+
+      onMounted(() => {
+        console.log(childRef.value.num); // 200
+      });
+
+      return () => {
+        return h(childComponent, { ref: childRef, num: 100 });
+      };
+    }
+  };
+
+  render(h(parentComponent2), app);
+*/
+
+
+  // 3. ref 放在dom元素上，那么ref就是当前dom元素
+
+  const parentComponent3 = {
+    setup() {
+      const childRef = ref(null);
+
+      onMounted(() => {
+        console.log(childRef.value); // <div num="100"></div>
+      });
+
+      return () => {
+        return h('div', { ref: childRef, num: 100 });
+      };
+    }
+  };
+
+  render(h(parentComponent3), app);
+
+
+</script>
+</body>
+</html>

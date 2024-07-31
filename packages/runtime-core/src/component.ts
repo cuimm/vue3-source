@@ -57,6 +57,7 @@ export function createComponentInstance(vnode) {
     proxy: null as any, // 组件代理对象，用来代理data、props、attrs，方便用户访问
     component: null, // Component组件跟元素组件不同，复用的是component
     setupState: {}, // setup返回的对象
+    exposed: null, // 组件通过expose暴露出来的对象
   };
   return instance;
 }

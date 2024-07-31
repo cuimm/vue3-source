@@ -632,8 +632,10 @@ function createVNode(type, props, children) {
     shapeFlag,
     key: props?.key,
     // 用于diff算法比对
-    el: null
+    el: null,
     // 虚拟节点对应的真实节点
+    ref: props?.ref
+    // 元素：dom元素  组件：实例/exposed
   };
   if (children) {
     if (isArray(children)) {
@@ -716,8 +718,10 @@ function createComponentInstance(vnode) {
     // 组件代理对象，用来代理data、props、attrs，方便用户访问
     component: null,
     // Component组件跟元素组件不同，复用的是component
-    setupState: {}
+    setupState: {},
     // setup返回的对象
+    exposed: null
+    // 组件通过expose暴露出来的对象
   };
   return instance;
 }
@@ -1037,7 +1041,9 @@ function createRenderer(renderOptions2) {
         if (bm) {
           invokeArrayFns(bm);
         }
+        setCurrentInstance(instance);
         const subTree = render3.call(instance.proxy, instance.proxy);
+        unsetCurrentInstance();
         patch(null, subTree, container, anchor);
         instance.isMounted = true;
         instance.subTree = subTree;
@@ -1052,7 +1058,9 @@ function createRenderer(renderOptions2) {
         if (bu) {
           invokeArrayFns(bu);
         }
+        setCurrentInstance(instance);
         const subTree = render3.call(instance.proxy, instance.proxy);
+        unsetCurrentInstance();
         patch(instance.subTree, subTree, container, anchor);
         instance.subTree = subTree;
         if (u) {
@@ -1136,6 +1144,12 @@ function createRenderer(renderOptions2) {
       patchChildren(n1, n2, container);
     }
   };
+  const setRef = (rawRef, vnode) => {
+    const value = vnode.shapeFlag & 4 /* STATEFUL_COMPONENT */ ? vnode.component.exposed || vnode.component.proxy : vnode.el;
+    if (isRef(rawRef)) {
+      rawRef.value = value;
+    }
+  };
   const patch = (n1, n2, container, anchor = null) => {
     if (n1 === n2) {
       return;
@@ -1144,7 +1158,7 @@ function createRenderer(renderOptions2) {
       unmount(n1);
       n1 = null;
     }
-    const { type, shapeFlag } = n2;
+    const { type, shapeFlag, ref: ref2 } = n2;
     switch (type) {
       case Text:
         processText(n1, n2, container);
@@ -1159,6 +1173,9 @@ function createRenderer(renderOptions2) {
           processComponent(n1, n2, container, anchor);
         }
         break;
+    }
+    if (ref2 !== null) {
+      setRef(ref2, n2);
     }
   };
   const unmount = (vnode) => {

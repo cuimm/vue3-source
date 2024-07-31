@@ -43,6 +43,7 @@ export function createVNode(type, props, children?) {
     shapeFlag: shapeFlag,
     key: props?.key, // 用于diff算法比对
     el: null, // 虚拟节点对应的真实节点
+    ref: props?.ref, // 元素：dom元素  组件：实例/exposed
   };
 
   if (children) {
