@@ -1,9 +1,10 @@
 import { hasOwn, isArray, isNumber, isString, isUndefined, ShapeFlags, warn } from '@vue/shared';
-import { reactive, ReactiveEffect } from '@vue/reactivity';
+import { ReactiveEffect } from '@vue/reactivity';
 import getSequence from './seq';
 import { Fragment, Text, isSameVNode, createVNode } from './vnode';
 import { queueJob } from './scheduler';
 import { createComponentInstance, setupComponent } from './component';
+import { invokeArrayFns } from './apiLifecycle';
 
 export function createRenderer(renderOptions) {
   const {
@@ -331,22 +332,44 @@ export function createRenderer(renderOptions) {
 
     // 组件更新逻辑。组件自身的状态(data)发生变化直接走该逻辑，外界传递的props的变化会先更新instance.props再走该逻辑。
     const componentUpdateFn = () => {
+      const { bm, m } = instance;
+
       if (!instance.isMounted) {
+        // onBeforeMount
+        if (bm) {
+          invokeArrayFns(bm);
+        }
+
         const subTree = render.call(instance.proxy, instance.proxy);
         patch(null, subTree, container, anchor); // Component渲染完毕之后，el挂载到subTree上（n1.component.subTree.el）
         instance.isMounted = true;
         instance.subTree = subTree;
+
+        // onMounted
+        if (m) {
+          invokeArrayFns(m);
+        }
       } else {
-        const { next } = instance;
+        const { next, bu, u } = instance;
 
         if (next) {
           /* 有next属性，说明是属性或者插槽更新 */
           updateComponentPreRender(instance, next);
         }
 
+        // onBeforeUpdate
+        if (bu) {
+          invokeArrayFns(bu);
+        }
+
         const subTree = render.call(instance.proxy, instance.proxy);
         patch(instance.subTree, subTree, container, anchor);
         instance.subTree = subTree;
+
+        // onUpdated
+        if (u) {
+          invokeArrayFns(u);
+        }
       }
     };
 

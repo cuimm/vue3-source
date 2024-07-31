@@ -1,0 +1,82 @@
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport"
+        content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>lifeCycle</title>
+</head>
+<body>
+<div id="app"></div>
+<script type="module">
+  // import { ref, render, h, Text, getCurrentInstance, onBeforeMount, onMounted, onBeforeUpdate, onUpdated } from '/node_modules/@vue/runtime-dom/dist/runtime-dom.esm-browser.js';
+  import { render, h, ref, getCurrentInstance, onBeforeMount, onMounted, onBeforeUpdate, onUpdated } from '../dist/runtime-dom.js';
+
+  /*
+  * 父初始化 -> 子初始化 -> 子完成 -> 父完成
+  * 父更新  -> 子更新 -> 子完成 -> 父完成
+  * */
+
+  const ChildComponent = {
+    props: {
+      name: String
+    },
+    setup(props, { attrs, slots, emit, expose }) {
+      console.log('child instance：', getCurrentInstance());
+      onBeforeMount(() => {
+        console.log('child current instance：', getCurrentInstance());
+
+        console.log('onBeforeMount child');
+      });
+      onMounted(() => {
+        console.log('onMounted: child');
+      });
+      onBeforeUpdate(() => {
+        console.log('onBeforeUpdate: child');
+      });
+      onUpdated(() => {
+        console.log('onUpdated: child');
+      });
+
+      return function () {
+        console.log('ChildComponent: render');
+        return h('div', props.name);
+      };
+    },
+  };
+
+  const ParentComponent = {
+    setup() {
+      console.log('parent instance：', getCurrentInstance());
+
+      const name = ref('cuimm');
+
+      setTimeout(() => {
+        name.value = 'vue3';
+      }, 2000);
+
+      onBeforeMount(() => {
+        console.log('onBeforeMount: parent');
+      });
+      onMounted(() => {
+        console.log('onMounted: parent');
+      });
+      onBeforeUpdate(() => {
+        console.log('onBeforeUpdate: parent');
+      });
+      onUpdated(() => {
+        console.log('onUpdated: parent');
+      });
+
+      return () => {
+        console.log('ParentComponent: render');
+        return h(ChildComponent, { name: name.value });
+      };
+    }
+  };
+
+  render(h(ParentComponent), app);
+
+</script>
+</body>
+</html>

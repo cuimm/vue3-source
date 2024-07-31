@@ -138,7 +138,11 @@ export function setupComponent(instance) {
         instance.exposed = value; // 将数据暴露到instance上
       }
     };
+
+    setCurrentInstance(instance);
     const setupResult = setup(instance.props, setupContext);
+    unsetCurrentInstance();
+
     if (isFunction(setupResult)) {
       instance.render = setupResult;
     } else {
@@ -160,3 +164,30 @@ export function setupComponent(instance) {
     instance.render = render;
   }
 }
+
+/**
+ * 当前组件实例
+ */
+export let currentInstance = null;
+
+/**
+ * 获取当前组件实例
+ */
+export const getCurrentInstance = () => {
+  return currentInstance;
+};
+
+/**
+ * 设置当前组件实例
+ * @param instance
+ */
+export const setCurrentInstance = instance => {
+  currentInstance = instance;
+};
+
+/**
+ * 清空当前组件实例
+ */
+export const unsetCurrentInstance = () => {
+  currentInstance = null;
+};
