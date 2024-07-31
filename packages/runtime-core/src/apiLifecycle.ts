@@ -16,7 +16,7 @@ function createHook(lifecycle) {
     if (instance) { // 保证当前的钩子是在组件中运行的
       const hooks = instance[lifecycle] || (instance[lifecycle] = []);
 
-      // 包裹当前要执行的钩子，通过闭包将当前instance和钩子函数进行绑定。
+      // 包裹当前要执行的钩子，通过闭包将当前instance和钩子函数进行绑定。（因为setup执行完毕之后，currentInstance会被清空）
       const wrapHook = () => {
         setCurrentInstance(instance);
         hook.call(instance);
