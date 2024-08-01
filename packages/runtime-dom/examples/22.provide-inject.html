@@ -1,0 +1,72 @@
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport"
+        content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>provide & inject</title>
+</head>
+<body>
+<div id="app"></div>
+<script type="module">
+  // import { ref, render, h, Fragment, Text, provide, inject, getCurrentInstance, onBeforeMount, onMounted, onBeforeUpdate, onUpdated } from '/node_modules/@vue/runtime-dom/dist/runtime-dom.esm-browser.js';
+  import { render, h, ref, Fragment, provide, inject, getCurrentInstance, onBeforeMount, onMounted, onBeforeUpdate, onUpdated } from '../dist/runtime-dom.js';
+
+  /*
+  * 在父组件中提供数据，在后代组件中获取数据。
+  *
+  * 构建父子关系，父组件通过provide向子组件传递数据，子组件去父组件获取数据之后再往下传递数据。这样一层层的传递下去，实现跨组件的数据传递。
+  * Comp1 -> Comp2 -> Comp3 ...
+  *
+  * */
+
+  const Comp3 = {
+    name: 'Comp3',
+    setup() {
+      const name = inject('name');
+      const age = inject('age', 18);
+      const address = inject('address');
+      console.log('name', name);
+      console.log(getCurrentInstance());
+
+      return () => {
+        return h('div', [name.value, age, address]);
+      };
+    }
+  };
+
+  const Comp2 = {
+    name: 'Comp2',
+    setup() {
+      provide('address', '北京');
+
+      return () => {
+        return h(Comp3);
+      };
+    }
+  };
+
+  const Comp1 = {
+    name: 'Comp1',
+    setup() {
+      const name = ref('cuimm');
+
+      provide('name', name);
+
+      console.log('name111', name);
+
+      setTimeout(() => {
+        name.value = 'cuimengmeng';
+      }, 2000);
+
+      return () => {
+        return h(Comp2);
+      };
+    }
+  };
+
+  render(h(Comp1), app);
+
+</script>
+</body>
+</html>

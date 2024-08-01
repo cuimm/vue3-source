@@ -42,8 +42,9 @@ const initSlots = (instance, children) => {
 /**
  * 创建组件实力
  * @param vnode 组件虚拟节点
+ * @param parent 父组件
  */
-export function createComponentInstance(vnode) {
+export function createComponentInstance(vnode, parent) {
   const instance = {
     data: null, // 状态
     vnode: vnode, // 组件的虚拟节点
@@ -58,6 +59,8 @@ export function createComponentInstance(vnode) {
     component: null, // Component组件跟元素组件不同，复用的是component
     setupState: {}, // setup返回的对象
     exposed: null, // 组件通过expose暴露出来的对象
+    parent: parent, // 组件的父级
+    provides: parent ? parent.provides : Object.create(null), // 构建provides（如果子组件没有单独提供provide数据，那么当前组件的provide数据和父组件复用同一份）
   };
   return instance;
 }
