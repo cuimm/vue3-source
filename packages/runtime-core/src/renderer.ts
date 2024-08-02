@@ -591,6 +591,7 @@ export function createRenderer(renderOptions) {
         if (shapeFlag & ShapeFlags.ELEMENT) {
           processElement(n1, n2, container, anchor, parentComponent);
         } else if (shapeFlag & ShapeFlags.TELEPORT) {
+          // 渲染逻辑交给组件内部处理
           type.process(n1, n2, container, anchor, parentComponent, {
             mountChildren,
             patchChildren,
