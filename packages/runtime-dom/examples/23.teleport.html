@@ -1,0 +1,37 @@
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport"
+        content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>Teleport</title>
+</head>
+<body>
+<div id="app"></div>
+<div id="app2"></div>
+<div id="app3"></div>
+<script type="module">
+  // import { render, h, Text, Teleport,  } from '/node_modules/@vue/runtime-dom/dist/runtime-dom.esm-browser.js';
+  import { render, h, Text, Teleport } from '../dist/runtime-dom.js';
+
+
+  const VueComponent = {
+    setup() {
+      return () => {
+        return h(Text, 'Teleport');
+      };
+    }
+  };
+
+  render(h(Teleport, { to: '#app2' }, [ 'Hello!', h(VueComponent) ]), app);
+
+  setTimeout(() => {
+    render(h(Teleport, { to: '#app3' }, [ '更新', h(VueComponent) ]), app);
+  }, 2000);
+
+  setTimeout(() => {
+    render(null, app);
+  }, 4000);
+</script>
+</body>
+</html>

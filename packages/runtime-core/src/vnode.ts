@@ -1,4 +1,5 @@
 import { isArray, isFunction, isObject, isString, ShapeFlags } from '@vue/shared';
+import { isTeleport } from './components/Teleport';
 
 export const Text = Symbol('Text');
 
@@ -31,11 +32,13 @@ export function createVNode(type, props, children?) {
 
   const shapeFlag: any = isString(type)
     ? ShapeFlags.ELEMENT // 元素
-    : isObject(type)
-      ? ShapeFlags.STATEFUL_COMPONENT // 组件
-      : isFunction(type)
-        ? ShapeFlags.FUNCTIONAL_COMPONENT // 函数式组件
-        : 0;
+    : isTeleport(type)
+      ? ShapeFlags.TELEPORT
+      : isObject(type)
+        ? ShapeFlags.STATEFUL_COMPONENT // 组件
+        : isFunction(type)
+          ? ShapeFlags.FUNCTIONAL_COMPONENT // 函数式组件
+          : 0;
 
   const vnode = {
     __v_isVNode: true,

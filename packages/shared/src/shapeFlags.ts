@@ -23,7 +23,7 @@ export enum ShapeFlags {
   TEXT_CHILDREN = 1 << 3, // 子节点是文本 00001000  =8
   ARRAY_CHILDREN = 1 << 4, // 子节点是数组 00010000  =16
   SLOTS_CHILDREN = 1 << 5, // 子节点是插槽 000100000  =32
-  TELEPORT = 1 << 6, // 001000000  =64
+  TELEPORT = 1 << 6, // Teleport 001000000  =64
   SUSPENSE = 1 << 7, // 010000000  =128
   COMPONENT_SHOULD_KEEP_ALIVE = 1 << 8, // =256
   COMPONENT_KEPT_ALIVE = 1 << 9, // =512

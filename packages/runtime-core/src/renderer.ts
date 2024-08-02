@@ -102,17 +102,6 @@ export function createRenderer(renderOptions) {
   };
 
   /**
-   * 卸载子节点
-   * @param children
-   * @param parentComponent
-   */
-  const unmountChildren = (children, parentComponent) => {
-    for (let index = 0; index < children.length; index++) {
-      unmount(children[index], parentComponent);
-    }
-  };
-
-  /**
    * 比较两个儿子的差异
    *
    * 先依次从前往后比对，再依次从后往前比对，找到不相同的范围
@@ -561,8 +550,8 @@ export function createRenderer(renderOptions) {
    */
   const setRef = (rawRef, vnode) => {
     const value = vnode.shapeFlag & ShapeFlags.STATEFUL_COMPONENT
-    ? vnode.component.exposed || vnode.component.proxy
-    : vnode.el;
+      ? vnode.component.exposed || vnode.component.proxy
+      : vnode.el;
 
     if (isRef(rawRef)) {
       rawRef.value = value;
@@ -601,6 +590,14 @@ export function createRenderer(renderOptions) {
       default:
         if (shapeFlag & ShapeFlags.ELEMENT) {
           processElement(n1, n2, container, anchor, parentComponent);
+        } else if (shapeFlag & ShapeFlags.TELEPORT) {
+          type.process(n1, n2, container, anchor, parentComponent, {
+            mountChildren,
+            patchChildren,
+            move(vnode, container, anchor) { // teleport传送门，可以将组件或者元素移动到指定位置
+              hostInsert(vnode.component ? vnode.component.subTree.el : vnode.el, container, anchor);
+            }
+          });
         } else if (shapeFlag & ShapeFlags.COMPONENT) {
           processComponent(n1, n2, container, anchor, parentComponent);
         }
@@ -613,6 +610,17 @@ export function createRenderer(renderOptions) {
   };
 
   /**
+   * 卸载子节点
+   * @param children
+   * @param parentComponent
+   */
+  const unmountChildren = (children, parentComponent) => {
+    for (let index = 0; index < children.length; index++) {
+      unmount(children[index], parentComponent);
+    }
+  };
+
+  /**
    * 卸载dom节点
    * @param vnode 虚拟节点
    * @param parentComponent 父组件
@@ -621,10 +629,12 @@ export function createRenderer(renderOptions) {
     const { type, shapeFlag, children } = vnode;
     if (type === Fragment) { // 卸载Fragment组件
       unmountChildren(children, parentComponent);
+    } else if (shapeFlag & ShapeFlags.TELEPORT) { // 卸载Teleport组件
+      vnode.type.remove(vnode, unmountChildren);
     } else if (shapeFlag & ShapeFlags.COMPONENT) { // 卸载component组件
       unmount(vnode.component.subTree, parentComponent);
     } else {
-      hostRemove(vnode.el);
+      hostRemove(vnode.el); // 卸载dom元素
     }
   };
 
