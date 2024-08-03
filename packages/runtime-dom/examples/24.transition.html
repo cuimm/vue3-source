@@ -1,0 +1,68 @@
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>Transition</title>
+</head>
+<body>
+<div id="app"></div>
+<style>
+  /* 提供指定样式名样式，程序内部自动添加className */
+  .fade-enter-active,
+  .fade-leave-active {
+      transition: opacity 1s ease; /* CSS transition动画结束会触发事件 */
+  }
+  .fade-enter-from,
+  .fade-leave-to {
+      opacity: 0;
+  }
+  .fade-leave-from {
+      border: 10px solid black; /* CSS transition动画结束会触发事件 */
+  }
+  .fade-leave-active {
+      border: 10px solid pink;
+  }
+</style>
+<script type="module">
+  // import { render, h, Transition } from '/node_modules/@vue/runtime-dom/dist/runtime-dom.esm-browser.js';
+  import { render, h, Transition } from '../dist/runtime-dom.js';
+
+  const props = {
+    name: 'fade',
+    onBeforeEnter(el) {
+      console.log('onBeforeEnter', el);
+    },
+    onEnter(el) {
+      console.log('enter', el);
+    },
+    onLeave(el) {
+      console.log('leave', el);
+    },
+  };
+
+  render(h(Transition, props, {
+    default: () => {
+      return h('div', { ids: '1', style: { width: '100px', height: '100px', background: 'red' } });
+    },
+  }), app);
+
+  setTimeout(() => {
+    render(h(Transition, props, {
+      default: () => {
+        return h('p', { ids: 2, style: { width: '100px', height: '100px', background: 'blue' } });
+      }
+    }), app);
+  }, 1000);
+
+  setTimeout(() => {
+    render(h(Transition, props, {
+      default: () => {
+        return h('div', { ids: 3, style: { width: '100px', height: '100px', background: 'yellow' } });
+      },
+    }), app);
+  }, 2000);
+
+</script>
+</body>
+</html>

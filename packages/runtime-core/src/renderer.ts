@@ -58,7 +58,7 @@ export function createRenderer(renderOptions) {
    * @param parentComponent
    */
   const mountElement = (vnode, container, anchor, parentComponent) => {
-    const { type, props, shapeFlag, children } = vnode;
+    const { type, props, shapeFlag, children, transition } = vnode;
 
     // 让虚拟节点和真实的dom节点创建关联。
     // 后续更新vnode时，可以和上一次的vnode做比对，之后更新对应的el元素，也可以复用这个dom元素。
@@ -78,7 +78,15 @@ export function createRenderer(renderOptions) {
       mountChildren(children, el, anchor, parentComponent); // 儿子节点是数组
     }
 
+    if (transition) {
+      transition.beforeEnter(el);
+    }
+
     hostInsert(el, container, anchor);
+
+    if (transition) {
+      transition.enter(el);
+    }
   };
 
   /**
@@ -320,6 +328,7 @@ export function createRenderer(renderOptions) {
     instance.next = null; // 清空next属性
     instance.vnode = next; // 更新新的虚拟节点
     updateProps(instance, instance.props, next.props); // 更新props
+    Object.assign(instance.slots, next.children); // 更新插槽
   };
 
   /**
@@ -327,11 +336,11 @@ export function createRenderer(renderOptions) {
    * @param instance
    */
   const renderComponent = instance => {
-    const { vnode, render, proxy, attrs } = instance;
+    const { vnode, render, proxy, attrs, slots } = instance;
     if (vnode.shapeFlag & ShapeFlags.STATEFUL_COMPONENT) {
       return render.call(proxy, proxy);
     } else {
-      return vnode.type(attrs); // 渲染函数式组件（函数式组件不建议使用，因为没有任何性能优化）
+      return vnode.type(attrs, { slots }); // 渲染函数式组件（函数式组件不建议使用，因为没有任何性能优化）
     }
   };
 
@@ -627,7 +636,12 @@ export function createRenderer(renderOptions) {
    * @param parentComponent 父组件
    */
   const unmount = (vnode, parentComponent = null) => {
-    const { type, shapeFlag, children } = vnode;
+    const { type, shapeFlag, children, el, transition } = vnode;
+
+    const performRemove = () => {
+      hostRemove(vnode.el); // 卸载dom元素
+    };
+
     if (type === Fragment) { // 卸载Fragment组件
       unmountChildren(children, parentComponent);
     } else if (shapeFlag & ShapeFlags.TELEPORT) { // 卸载Teleport组件
@@ -635,7 +649,11 @@ export function createRenderer(renderOptions) {
     } else if (shapeFlag & ShapeFlags.COMPONENT) { // 卸载component组件
       unmount(vnode.component.subTree, parentComponent);
     } else {
-      hostRemove(vnode.el); // 卸载dom元素
+      if (transition) {
+        transition.leave(el, performRemove); // Transition组件离开
+      } else {
+        performRemove();
+      }
     }
   };
 

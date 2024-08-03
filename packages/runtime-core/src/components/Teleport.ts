@@ -1,4 +1,4 @@
-import { isArray, ShapeFlags } from '@vue/shared';
+import { ShapeFlags } from '@vue/shared';
 
 export const isTeleport = type => {
   return type && type.__isTeleport;
@@ -33,7 +33,7 @@ export const Teleport = {
   },
 
   remove(vnode, unmountChildren) {
-    const { shapeFlag, children } = vnode;
+    const { shapeFlag } = vnode;
     if (shapeFlag & ShapeFlags.ARRAY_CHILDREN) {
       unmountChildren(vnode.children);
     }
