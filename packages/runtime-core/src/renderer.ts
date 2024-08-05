@@ -5,6 +5,7 @@ import { Fragment, Text, isSameVNode, createVNode } from './vnode';
 import { queueJob } from './scheduler';
 import { createComponentInstance, setCurrentInstance, setupComponent, unsetCurrentInstance } from './component';
 import { invokeArrayFns } from './apiLifecycle';
+import { isKeepAlive } from './components/KeepAlive';
 
 export function createRenderer(renderOptions) {
   const {
@@ -421,6 +422,16 @@ export function createRenderer(renderOptions) {
     // 1. 创建组件实例
     const instance = (vnode.component = createComponentInstance(vnode, parentComponent));
 
+    if (isKeepAlive(vnode)) {
+      instance.ctx.renderer = {
+        createElement: hostCreateElement, // 内部需要创建一个div来缓存dom
+        unmount: unmount, // 缓存个数超过最大限制时，组件切换时需要将现在容器中的元素移除
+        move(vnode, container, anchor) {
+          hostInsert(vnode.component.subTree.el, container, anchor); // 把之前渲染好的dom元素放入到临时容器中
+        },
+      };
+    }
+
     // 2. 给实例组件赋值
     setupComponent(instance);
 
@@ -511,7 +522,11 @@ export function createRenderer(renderOptions) {
    */
   const processComponent = (n1, n2, container, anchor, parentComponent) => {
     if (n1 === null) {
-      mountComponent(n2, container, anchor, parentComponent); // 组件初渲染
+      if (n2.shapeFlag & ShapeFlags.COMPONENT_KEPT_ALIVE) {
+        parentComponent.ctx.activate(n2, container, anchor); // KeepAlive组件的重新挂载逻辑，把之前渲染好的dom元素移动到容器内
+      } else {
+        mountComponent(n2, container, anchor, parentComponent); // 组件初渲染
+      }
     } else {
       updateComponent(n1, n2); // 组件更新（基于 属性/插槽 的更新）
     }
@@ -600,7 +615,7 @@ export function createRenderer(renderOptions) {
         if (shapeFlag & ShapeFlags.ELEMENT) {
           processElement(n1, n2, container, anchor, parentComponent);
         } else if (shapeFlag & ShapeFlags.TELEPORT) {
-          // 渲染逻辑交给组件内部处理
+          // Teleport渲染逻辑交给组件内部处理
           type.process(n1, n2, container, anchor, parentComponent, {
             mountChildren,
             patchChildren,
@@ -642,7 +657,9 @@ export function createRenderer(renderOptions) {
       hostRemove(vnode.el); // 卸载dom元素
     };
 
-    if (type === Fragment) { // 卸载Fragment组件
+    if (shapeFlag & ShapeFlags.COMPONENT_SHOULD_KEEP_ALIVE) {
+      parentComponent.ctx.deactivate(vnode); // 执行KeepAlive的失活逻辑
+    } else if (type === Fragment) { // 卸载Fragment组件
       unmountChildren(children, parentComponent);
     } else if (shapeFlag & ShapeFlags.TELEPORT) { // 卸载Teleport组件
       vnode.type.remove(vnode, unmountChildren);

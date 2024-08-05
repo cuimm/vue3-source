@@ -754,8 +754,10 @@ function createComponentInstance(vnode, parent) {
     // 组件通过expose暴露出来的对象
     parent,
     // 组件的父级
-    provides: parent ? parent.provides : /* @__PURE__ */ Object.create(null)
+    provides: parent ? parent.provides : /* @__PURE__ */ Object.create(null),
     // 构建provides（如果子组件没有单独提供provide数据，那么当前组件的provide数据和父组件复用同一份）
+    ctx: {}
+    // 如果是KeepAlive组件，将dom api放在这个属性上
   };
   return instance;
 }
@@ -878,6 +880,80 @@ var invokeArrayFns = (hooks) => {
   for (let index = 0; index < hooks.length; index++) {
     hooks[index]();
   }
+};
+
+// packages/runtime-core/src/components/KeepAlive.ts
+var KeepAlive = {
+  __isKeepAlive: true,
+  props: {
+    max: Number
+  },
+  setup(props, { slots }) {
+    const { max } = props;
+    const keys = /* @__PURE__ */ new Set();
+    const cache = /* @__PURE__ */ new Map();
+    const instance = getCurrentInstance();
+    const { createElement, unmount: _unmount, move } = instance.ctx.renderer;
+    instance.ctx.activate = (vnode, container, anchor) => {
+      move(vnode, container, anchor);
+    };
+    const storageContent = createElement("div");
+    instance.ctx.deactivate = (vnode) => {
+      move(vnode, storageContent, null);
+    };
+    let pendingCacheKey = null;
+    function cacheSubTree() {
+      cache.set(pendingCacheKey, instance.subTree);
+    }
+    onMounted(cacheSubTree);
+    onUpdated(cacheSubTree);
+    function resetShapeFlag(vnode) {
+      let shapeFlag = vnode.shapeFlag;
+      if (shapeFlag & 512 /* COMPONENT_KEPT_ALIVE */) {
+        shapeFlag -= 512 /* COMPONENT_KEPT_ALIVE */;
+      }
+      if (shapeFlag & 256 /* COMPONENT_SHOULD_KEEP_ALIVE */) {
+        shapeFlag -= 256 /* COMPONENT_SHOULD_KEEP_ALIVE */;
+      }
+      vnode.shapeFlag = shapeFlag;
+    }
+    function unmount(vnode) {
+      resetShapeFlag(vnode);
+      _unmount(vnode);
+    }
+    function pruneCacheEntry(key) {
+      const cached = cache.get(key);
+      unmount(cached);
+      keys.delete(key);
+      cache.delete(key);
+    }
+    return () => {
+      if (!slots.default) {
+        return null;
+      }
+      const vnode = slots.default();
+      const comp = vnode.type;
+      const key = vnode.key === null ? comp : vnode.key;
+      const cachedVNode = cache.get(key);
+      pendingCacheKey = key;
+      if (cachedVNode) {
+        vnode.component = cachedVNode.component;
+        vnode.shapeFlag |= 512 /* COMPONENT_KEPT_ALIVE */;
+        keys.delete(key);
+        keys.add(key);
+      } else {
+        keys.add(key);
+        if (!isUndefined(max) && keys.size > max) {
+          pruneCacheEntry(keys.values().next().value);
+        }
+      }
+      vnode.shapeFlag |= 256 /* COMPONENT_SHOULD_KEEP_ALIVE */;
+      return vnode;
+    };
+  }
+};
+var isKeepAlive = (vnode) => {
+  return vnode.type.__isKeepAlive === true;
 };
 
 // packages/runtime-core/src/renderer.ts
@@ -1118,6 +1194,17 @@ function createRenderer(renderOptions2) {
   };
   const mountComponent = (vnode, container, anchor, parentComponent) => {
     const instance = vnode.component = createComponentInstance(vnode, parentComponent);
+    if (isKeepAlive(vnode)) {
+      instance.ctx.renderer = {
+        createElement: hostCreateElement,
+        // 内部需要创建一个div来缓存dom
+        unmount,
+        // 缓存个数超过最大限制时，组件切换时需要将现在容器中的元素移除
+        move(vnode2, container2, anchor2) {
+          hostInsert(vnode2.component.subTree.el, container2, anchor2);
+        }
+      };
+    }
     setupComponent(instance);
     setupRenderEffect(instance, container, anchor);
   };
@@ -1166,7 +1253,11 @@ function createRenderer(renderOptions2) {
   };
   const processComponent = (n1, n2, container, anchor, parentComponent) => {
     if (n1 === null) {
-      mountComponent(n2, container, anchor, parentComponent);
+      if (n2.shapeFlag & 512 /* COMPONENT_KEPT_ALIVE */) {
+        parentComponent.ctx.activate(n2, container, anchor);
+      } else {
+        mountComponent(n2, container, anchor, parentComponent);
+      }
     } else {
       updateComponent(n1, n2);
     }
@@ -1240,7 +1331,9 @@ function createRenderer(renderOptions2) {
     const performRemove = () => {
       hostRemove(vnode.el);
     };
-    if (type === Fragment) {
+    if (shapeFlag & 256 /* COMPONENT_SHOULD_KEEP_ALIVE */) {
+      parentComponent.ctx.deactivate(vnode);
+    } else if (type === Fragment) {
       unmountChildren(children, parentComponent);
     } else if (shapeFlag & 64 /* TELEPORT */) {
       vnode.type.remove(vnode, unmountChildren);
@@ -1418,6 +1511,7 @@ var render = function(vnode, container) {
 };
 export {
   Fragment,
+  KeepAlive,
   LifecycleHooks,
   ReactiveEffect,
   Teleport,
@@ -1435,6 +1529,7 @@ export {
   h,
   inject,
   invokeArrayFns,
+  isKeepAlive,
   isReactive,
   isRef,
   isSameVNode,

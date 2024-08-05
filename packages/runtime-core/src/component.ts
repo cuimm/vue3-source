@@ -61,6 +61,7 @@ export function createComponentInstance(vnode, parent) {
     exposed: null, // 组件通过expose暴露出来的对象
     parent: parent, // 组件的父级
     provides: parent ? parent.provides : Object.create(null), // 构建provides（如果子组件没有单独提供provide数据，那么当前组件的provide数据和父组件复用同一份）
+    ctx: {} as any, // 如果是KeepAlive组件，将dom api放在这个属性上
   };
   return instance;
 }

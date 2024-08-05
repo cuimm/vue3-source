@@ -25,7 +25,7 @@ export enum ShapeFlags {
   SLOTS_CHILDREN = 1 << 5, // 子节点是插槽 000100000  =32
   TELEPORT = 1 << 6, // Teleport 001000000  =64
   SUSPENSE = 1 << 7, // 010000000  =128
-  COMPONENT_SHOULD_KEEP_ALIVE = 1 << 8, // =256
-  COMPONENT_KEPT_ALIVE = 1 << 9, // =512
+  COMPONENT_SHOULD_KEEP_ALIVE = 1 << 8, // 当前组件不做真实的dom卸载，卸载的dom放到临时存储容器内 =256
+  COMPONENT_KEPT_ALIVE = 1 << 9, // 无法做组件初始化操作 =512
   COMPONENT = ShapeFlags.STATEFUL_COMPONENT | ShapeFlags.FUNCTIONAL_COMPONENT, // 00000100 ｜ 00000010 => 00000110  标识位为1的就表示是什么组件（函数式和普通组件）
 }
