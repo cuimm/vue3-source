@@ -3,6 +3,8 @@ import { isTeleport } from './components/Teleport';
 
 export const Text = Symbol('Text');
 
+export const Comment = Symbol('Comment');
+
 export const Fragment = Symbol('Fragment');
 
 /**

@@ -17,6 +17,9 @@ export const nodeOps = {
   createText: text => {
     return document.createTextNode(text);
   },
+  createComment: text => {
+    return document.createComment(text);
+  },
   setText: (node, text) => {
     node.nodeValue = text; // 给文本节点设置文本
   },

@@ -1,7 +1,7 @@
 import { hasOwn, isArray, isNumber, isString, isUndefined, ShapeFlags, warn } from '@vue/shared';
 import { isRef, ReactiveEffect } from '@vue/reactivity';
 import getSequence from './seq';
-import { Fragment, Text, isSameVNode, createVNode } from './vnode';
+import { Fragment, Text, isSameVNode, createVNode, Comment } from './vnode';
 import { queueJob } from './scheduler';
 import { createComponentInstance, setCurrentInstance, setupComponent, unsetCurrentInstance } from './component';
 import { invokeArrayFns } from './apiLifecycle';
@@ -13,6 +13,7 @@ export function createRenderer(renderOptions) {
     remove: hostRemove,
     createElement: hostCreateElement,
     createText: hostCreateText,
+    createComment: hostCreateComment,
     setText: hostSetText,
     setElementText: hostSetElementText,
     parentNode: hostParentNode,
@@ -550,6 +551,20 @@ export function createRenderer(renderOptions) {
   };
 
   /**
+   * 处理注释
+   * @param n1
+   * @param n2
+   * @param container
+   */
+  const processComment = (n1, n2, container) => {
+    if (n1 === null) {
+      hostInsert((n2.el = hostCreateComment(n2.children || '')), container);
+    } else {
+      n2.el = n1.el; // there's no support for dynamic comments
+    }
+  };
+
+  /**
    * 处理Fragment组件
    * @param n1
    * @param n2
@@ -607,6 +622,9 @@ export function createRenderer(renderOptions) {
     switch (type) {
       case Text:
         processText(n1, n2, container);
+        break;
+      case Comment:
+        processComment(n1, n2, container);
         break;
       case Fragment:
         processFragment(n1, n2, container, anchor, parentComponent);

@@ -15,6 +15,9 @@ var nodeOps = {
   createText: (text) => {
     return document.createTextNode(text);
   },
+  createComment: (text) => {
+    return document.createComment(text);
+  },
   setText: (node, text) => {
     node.nodeValue = text;
   },
@@ -645,6 +648,7 @@ var Teleport = {
 
 // packages/runtime-core/src/vnode.ts
 var Text = Symbol("Text");
+var Comment = Symbol("Comment");
 var Fragment = Symbol("Fragment");
 function isVNode(value) {
   return value ? value.__v_isVNode === true : false;
@@ -963,6 +967,7 @@ function createRenderer(renderOptions2) {
     remove: hostRemove,
     createElement: hostCreateElement,
     createText: hostCreateText,
+    createComment: hostCreateComment,
     setText: hostSetText,
     setElementText: hostSetElementText,
     parentNode: hostParentNode,
@@ -1272,6 +1277,13 @@ function createRenderer(renderOptions2) {
       }
     }
   };
+  const processComment = (n1, n2, container) => {
+    if (n1 === null) {
+      hostInsert(n2.el = hostCreateComment(n2.children || ""), container);
+    } else {
+      n2.el = n1.el;
+    }
+  };
   const processFragment = (n1, n2, container, anchor, parentComponent) => {
     if (n1 === null) {
       mountChildren(n2.children, container, anchor, parentComponent);
@@ -1297,6 +1309,9 @@ function createRenderer(renderOptions2) {
     switch (type) {
       case Text:
         processText(n1, n2, container);
+        break;
+      case Comment:
+        processComment(n1, n2, container);
         break;
       case Fragment:
         processFragment(n1, n2, container, anchor, parentComponent);
@@ -1571,7 +1586,7 @@ function defineAsyncComponent(options) {
         loading.value = false;
         clearTimeout(delayTimer);
       });
-      const placeHolderComp = h("div");
+      const placeHolderComp = h(Comment);
       return () => {
         if (loaded.value) {
           return h(resolvedComp);
@@ -1593,6 +1608,7 @@ var render = function(vnode, container) {
   return createRenderer(renderOptions).render(vnode, container);
 };
 export {
+  Comment,
   Fragment,
   KeepAlive,
   LifecycleHooks,

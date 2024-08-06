@@ -1,6 +1,7 @@
 import { isFunction } from '@vue/shared';
 import { ref } from '@vue/reactivity';
 import { h } from './h';
+import { Comment } from './vnode';
 
 export function defineAsyncComponent(options) {
   if (isFunction(options)) {
@@ -84,7 +85,7 @@ export function defineAsyncComponent(options) {
         });
 
       // 默认占位符
-      const placeHolderComp = h('div');
+      const placeHolderComp = h(Comment);
 
       return () => {
         if (loaded.value) {
