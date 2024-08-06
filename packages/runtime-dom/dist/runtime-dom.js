@@ -1551,19 +1551,6 @@ function defineAsyncComponent(options) {
         }, timeout);
       }
       let attempts = 0;
-      function loadFunc2() {
-        return loader().catch((error2) => {
-          if (onError) {
-            return new Promise((resolve, reject) => {
-              const retry = () => resolve(loadFunc());
-              const fail = () => reject();
-              onError(error2, retry, fail, ++attempts);
-            });
-          } else {
-            throw error2;
-          }
-        });
-      }
       function loadFunc() {
         return loader().catch((error2) => {
           if (onError) {
