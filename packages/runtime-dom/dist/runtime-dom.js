@@ -1504,6 +1504,89 @@ function Transition(props, { slots }) {
   return h(BaseTransitionImpl, resolveTransitionProps(props), slots);
 }
 
+// packages/runtime-core/src/apiAsyncComponent.ts
+function defineAsyncComponent(options) {
+  if (isFunction(options)) {
+    options = { loader: options };
+  }
+  const {
+    loader,
+    delay,
+    loadingComponent,
+    timeout,
+    errorComponent,
+    onError
+  } = options;
+  return {
+    setup() {
+      const loaded = ref(false);
+      const loading = ref(false);
+      const error = ref(false);
+      let resolvedComp = null;
+      let delayTimer = null;
+      if (delay > 0) {
+        delayTimer = setTimeout(() => {
+          loading.value = true;
+        }, delay);
+      }
+      if (timeout) {
+        setTimeout(() => {
+          error.value = true;
+          console.error(new Error(`async component is timed out after ${timeout}ms`));
+        }, timeout);
+      }
+      let attempts = 0;
+      function loadFunc2() {
+        return loader().catch((error2) => {
+          if (onError) {
+            return new Promise((resolve, reject) => {
+              const retry = () => resolve(loadFunc());
+              const fail = () => reject();
+              onError(error2, retry, fail, ++attempts);
+            });
+          } else {
+            throw error2;
+          }
+        });
+      }
+      function loadFunc() {
+        return loader().catch((error2) => {
+          if (onError) {
+            return new Promise((resolve, reject) => {
+              const retry = () => resolve(loadFunc());
+              const fail = () => reject(error2);
+              onError(error2, retry, fail, ++attempts);
+            });
+          } else {
+            throw error2;
+          }
+        });
+      }
+      loadFunc().then((result) => {
+        loaded.value = true;
+        resolvedComp = result;
+      }).catch((error2) => {
+        error2.value = true;
+      }).finally(() => {
+        loading.value = false;
+        clearTimeout(delayTimer);
+      });
+      const placeHolderComp = h("div");
+      return () => {
+        if (loaded.value) {
+          return h(resolvedComp);
+        } else if (error.value && errorComponent) {
+          return h(errorComponent);
+        } else if (loading.value && loadingComponent) {
+          return h(loadingComponent);
+        } else {
+          return placeHolderComp;
+        }
+      };
+    }
+  };
+}
+
 // packages/runtime-dom/src/index.ts
 var renderOptions = Object.assign({ patchProp }, nodeOps);
 var render = function(vnode, container) {
@@ -1523,6 +1606,7 @@ export {
   createRenderer,
   createVNode,
   currentInstance,
+  defineAsyncComponent,
   effect,
   forceReflow,
   getCurrentInstance,

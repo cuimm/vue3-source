@@ -21,5 +21,4 @@ export function h(type, propsOrChildren?, children?) {
     }
     return createVNode(type, propsOrChildren, children); // h(类型, 属性, 儿子...)
   }
-
 }

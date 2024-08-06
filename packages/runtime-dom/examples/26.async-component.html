@@ -1,0 +1,62 @@
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport"
+        content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>Async Component</title>
+</head>
+<body>
+<div id="app"></div>
+<script type="module">
+  // import { h, render, defineAsyncComponent } from '/node_modules/@vue/runtime-dom/dist/runtime-dom.esm-browser.js';
+  import { h, render, defineAsyncComponent } from '../dist/runtime-dom.js';
+
+  const AsyncComponent = defineAsyncComponent({
+    loader: () => {
+      return new Promise((resolve, reject) => {
+        const random = Math.random();
+        console.log('load component...', random);
+        setTimeout(() => {
+          if (random > 0.5) {
+            resolve({
+              render: () => {
+                return h('h1', { style: { color: 'green' } }, '组件加载成功');
+              }
+            });
+          } else {
+            reject({
+              render() {
+                return h('h2', { style: { color: 'red' } }, '组件加载失败');
+              }
+            });
+          }
+        }, 3000);
+      });
+    },
+    timeout: 2000, // 超时时间。超时时间内无法返回组件会展示errorComponent
+    errorComponent: {
+      render() {
+        return h('div', { style: { color: 'red', fontSize: 18 } }, 'error renderer');
+      }
+    },
+    delay: 500, // loading延迟，delay时间间隔之后才展示loadingComponent
+    loadingComponent: {
+      render() {
+        return h('div', 'loading...');
+      }
+    },
+    onError(error, retry, reject, retryCount) {
+      console.log('onError: ', error, retry, reject, retryCount);
+      if (retryCount <= 6) {
+        console.log('重试中');
+        retry();
+      }
+    },
+  });
+
+  render(h(AsyncComponent), app);
+
+</script>
+</body>
+</html>
