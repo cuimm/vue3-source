@@ -40,27 +40,12 @@ export function defineAsyncComponent(options) {
 
       // 重试
       let attempts = 0;
-      function loadFunc2() {
-        return loader()
-          .catch(error => {
-            if (onError) {
-              return new Promise((resolve, reject) => {
-                const retry = () => resolve(loadFunc()); // 构建Promise链（递归）。loadFunc()返回promise，resolve的结果需要等待该promise的执行。
-                const fail = () => reject();
-                onError(error, retry, fail, ++attempts);
-              });
-            } else {
-              throw error;
-            }
-          });
-      }
-
       function loadFunc() {
         return loader()
           .catch(error => {
             if (onError) {
               return new Promise((resolve, reject) => {
-                const retry = () => resolve(loadFunc());
+                const retry = () => resolve(loadFunc()); // 构建Promise链（递归）。loadFunc()返回promise，resolve的结果需要等待该promise的执行。
                 const fail = () => reject(error);
                 onError(error, retry, fail, ++attempts);
               });
