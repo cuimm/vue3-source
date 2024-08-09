@@ -1,4 +1,5 @@
 export * from './shapeFlags';
+export * from './patchFlags';
 
 const hasOwnProperty = Object.prototype.hasOwnProperty;
 export const hasOwn = (value, key) => hasOwnProperty.call(value, key);
@@ -10,6 +11,10 @@ export const NOOP = () => {
 
 export function isUndefined(value) {
   return value === undefined;
+}
+
+export function isNull(value) {
+  return value === null;
 }
 
 export function isString(value) {
@@ -50,3 +55,12 @@ export const isOn = key => {
     && (key.charCodeAt(2) > 122 || key.charCodeAt(2) < 97); // uppercase letter
 };
 
+export const toDisplayString = value => {
+  return isString(value)
+    ? value
+    : isNull(value)
+      ? ''
+      : isObject(value)
+        ? JSON.stringify(value)
+        : String(value);
+};

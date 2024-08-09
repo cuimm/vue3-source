@@ -20,7 +20,7 @@ export function isVNode(value) {
  * @param n1
  * @param n2
  */
-export function isSameVNode(n1, n2) {
+export function isSameVNode(n1 , n2) {
   return (n1.type === n2.type) && (n1.key === n2.key);
 }
 
@@ -29,8 +29,9 @@ export function isSameVNode(n1, n2) {
  * @param type
  * @param props
  * @param children
+ * @param patchFlag
  */
-export function createVNode(type, props, children?) {
+export function createVNode(type, props, children?, patchFlag?) {
 
   const shapeFlag: any = isString(type)
     ? ShapeFlags.ELEMENT // 元素
@@ -51,7 +52,13 @@ export function createVNode(type, props, children?) {
     key: props?.key, // 用于diff算法比对
     el: null, // 虚拟节点对应的真实节点
     ref: props?.ref, // 元素：dom元素  组件：实例/exposed
+    patchFlag: patchFlag, // 用于dom diff靶向更新
   };
+
+  // currentBlock收集有patchFlag的子节点
+  if (currentBlock && patchFlag > 0) {
+    currentBlock.push(vnode);
+  }
 
   if (children) {
     if (isArray(children)) {
@@ -66,3 +73,38 @@ export function createVNode(type, props, children?) {
 
   return vnode;
 }
+
+
+/**************************** DOM DIFF优化 <靶向更新> ****************************/
+/**
+ * 用于收集动态虚拟子节点
+ */
+let currentBlock = null;
+
+export function openBlock() {
+  currentBlock = [];
+}
+
+export function closeBlock() {
+  currentBlock = null;
+}
+
+export function setupBlock(vnode) {
+  vnode.dynamicChildren = currentBlock;
+  closeBlock();
+  return vnode;
+}
+
+/**
+ * 收集动态节点
+ * @param type
+ * @param props
+ * @param children
+ * @param patchFlag
+ */
+export function createElementBlock(type, props, children?, patchFlag?) {
+  const vnode = createVNode(type, props, children, patchFlag);
+  return setupBlock(vnode);
+}
+
+export { createVNode as createElementVNode };

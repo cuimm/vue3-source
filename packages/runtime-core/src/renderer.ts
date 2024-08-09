@@ -1,4 +1,4 @@
-import { hasOwn, isArray, isNumber, isString, isUndefined, ShapeFlags, warn } from '@vue/shared';
+import { hasOwn, isArray, isNumber, isString, isUndefined, PatchFlags, ShapeFlags, warn } from '@vue/shared';
 import { isRef, ReactiveEffect } from '@vue/reactivity';
 import getSequence from './seq';
 import { Fragment, Text, isSameVNode, createVNode, Comment } from './vnode';
@@ -284,6 +284,26 @@ export function createRenderer(renderOptions) {
   };
 
   /**
+   * 线性比对 dynamicChildren
+   * @param n1
+   * @param n2
+   * @param el
+   * @param anchor
+   * @param parentComponent
+   */
+  const patchBlockChildren = (n1, n2, el, anchor, parentComponent) => {
+    for (let index = 0; index < n2.dynamicChildren.length; index++) {
+      patch(
+        n1.dynamicChildren[index],
+        n2.dynamicChildren[index],
+        el,
+        anchor,
+        parentComponent
+      );
+    }
+  };
+
+  /**
    * n1和n2是相同节点，dom元素可复用
    * 比对属性和元素的子节点
    * @param n1
@@ -298,9 +318,27 @@ export function createRenderer(renderOptions) {
     const oldProps = n1.props || {};
     const newProps = n2.props || {};
 
-    patchProps(oldProps, newProps, el); // 比对属性
+    const { patchFlag, dynamicChildren } = n2;
 
-    patchChildren(n1, n2, el, anchor, parentComponent); // 比对儿子节点
+    if (patchFlag > 0) {
+      if (patchFlag & PatchFlags.TEXT) {
+        if (n1.children != n2.children) {
+          return hostSetElementText(n2.el, n2.children);
+        }
+      }
+      // todo...
+    } else {
+      console.log('props 全量diff');
+      patchProps(oldProps, newProps, el); // 比对属性
+    }
+
+    if (dynamicChildren) {
+      console.log('线性diff');
+      patchBlockChildren(n1, n2, el, anchor, parentComponent);
+    } else {
+      console.log('全量diff');
+      patchChildren(n1, n2, el, anchor, parentComponent); // 比对儿子节点
+    }
   };
 
   /**
