@@ -9,36 +9,73 @@
 <body>
 <div id="app"></div>
 <script type="module">
-  // import { reactive, toRefs, h, render, openBlock as _openBlock, createElementBlock as _createElementBlock, createElementVNode as _createElementVNode, toDisplayString as _toDisplayString } from '/node_modules/@vue/runtime-dom/dist/runtime-dom.esm-browser.js';
-  import { reactive, toRefs, h, render, openBlock as _openBlock, createElementBlock as _createElementBlock, createElementVNode as _createElementVNode, toDisplayString as _toDisplayString  } from '../dist/runtime-dom.js';
+  // import {
+  //   reactive,
+  //   toRefs,
+  //   h,
+  //   render,
+  //   openBlock as _openBlock,
+  //   createElementBlock as _createElementBlock,
+  //   createElementVNode as _createElementVNode,
+  //   toDisplayString as _toDisplayString,
+  //   normalizeStyle as _normalizeStyle,
+  //   normalizeClass as _normalizeClass,
+  // } from '/node_modules/@vue/runtime-dom/dist/runtime-dom.esm-browser.js';
+  import {
+    reactive,
+    toRefs,
+    h,
+    render,
+    openBlock as _openBlock,
+    createElementBlock as _createElementBlock,
+    createElementVNode as _createElementVNode,
+    toDisplayString as _toDisplayString,
+    normalizeStyle as _normalizeStyle,
+    normalizeClass as _normalizeClass,
+  } from '../dist/runtime-dom.js';
 
   const MyComponent = {
     setup() {
-      const state = reactive({ name: 'Hello' });
+      const state = reactive({ name: 'Hello', tabindex: 10, class: [ 'title', {'is-disabled': true} ] });
+      const style = reactive({ color: 'red', fontSize: '29px' });
 
       setTimeout(() => {
         state.name = 'cuimm';
+        state.tabindex = 20;
+        style.color = 'green';
+        style.fontSize = '100px';
+        state.class.push('bolder');
       }, 2000);
 
       return {
         ...toRefs(state),
+        style: style,
       };
+    },
+    render2(_ctx) {
+      console.log(this === _ctx); // true
+      return h('div', null, [
+        h('h1', 'Hello'),
+        h('span', { tabindex: _ctx.tabindex, style: this.style, class: this.class }, _ctx.name),
+      ]);
     },
     render(_ctx) {
       /*
       vue-compiler编译前：
       <div>
         <h1>Hello</h1>
-        <span>{{name}}</span>
+        <span :tabindex="tabindex" :style="style" :class="class">{{name}}</span>
       </div>
       * */
-      const vnode = (
-        _openBlock(),
-          _createElementBlock('div', null, [
-            _createElementVNode('h1', null, 'Hello'),
-            _createElementVNode('span', null, _toDisplayString(_ctx.name), 1 /* TEXT */)
-          ])
-      );
+      const vnode = (_openBlock(), _createElementBlock("div", null, [
+        _createElementVNode("h1", null, "Hello"),
+        _createElementVNode("span", {
+          tabindex: _ctx.tabindex,
+          style: _normalizeStyle(_ctx.style),
+          class: _normalizeClass(_ctx.class)
+        }, _toDisplayString(_ctx.name), 15 /* TEXT, CLASS, STYLE, PROPS */, ["tabindex"])
+      ]));
+      console.log('vnode', vnode);
       return vnode;
     }
   };

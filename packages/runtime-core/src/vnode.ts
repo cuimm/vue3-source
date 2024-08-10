@@ -30,8 +30,9 @@ export function isSameVNode(n1 , n2) {
  * @param props
  * @param children
  * @param patchFlag
+ * @param dynamicProps
  */
-export function createVNode(type, props, children?, patchFlag?) {
+export function createVNode(type, props, children?, patchFlag?, dynamicProps?) {
 
   const shapeFlag: any = isString(type)
     ? ShapeFlags.ELEMENT // 元素
@@ -53,6 +54,8 @@ export function createVNode(type, props, children?, patchFlag?) {
     el: null, // 虚拟节点对应的真实节点
     ref: props?.ref, // 元素：dom元素  组件：实例/exposed
     patchFlag: patchFlag, // 用于dom diff靶向更新
+    dynamicChildren: null,
+    dynamicProps: dynamicProps,
   };
 
   // currentBlock收集有patchFlag的子节点
@@ -102,8 +105,8 @@ export function setupBlock(vnode) {
  * @param children
  * @param patchFlag
  */
-export function createElementBlock(type, props, children?, patchFlag?) {
-  const vnode = createVNode(type, props, children, patchFlag);
+export function createElementBlock(type, props, children?, patchFlag?, dynamicProps?) {
+  const vnode = createVNode(type, props, children, patchFlag, dynamicProps);
   return setupBlock(vnode);
 }
 
