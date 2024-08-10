@@ -71,6 +71,7 @@ var PatchFlags = /* @__PURE__ */ ((PatchFlags2) => {
 var hasOwnProperty = Object.prototype.hasOwnProperty;
 var hasOwn = (value, key) => hasOwnProperty.call(value, key);
 var warn = console.warn;
+var logger = console.log;
 var NOOP = () => {
 };
 function isUndefined(value) {
@@ -105,6 +106,32 @@ var isOn = (key) => {
 };
 var toDisplayString = (value) => {
   return isString(value) ? value : isNull(value) ? "" : isObject(value) ? JSON.stringify(value) : String(value);
+};
+var normalizeStyle = (value) => {
+  if (isString(value) || isObject(value)) {
+    return value;
+  }
+  return value;
+};
+var normalizeClass = (value) => {
+  let result = "";
+  if (isString(value)) {
+    result = value;
+  } else if (isArray(value)) {
+    for (let index = 0; index < value.length; index++) {
+      const normalized = normalizeClass(value[index]);
+      if (normalized) {
+        result += normalized + " ";
+      }
+    }
+  } else if (isObject(value)) {
+    for (const key in value) {
+      if (value[key]) {
+        result += key + " ";
+      }
+    }
+  }
+  return result.trim();
 };
 
 // packages/runtime-dom/src/modules/class.ts
@@ -697,7 +724,7 @@ function isVNode(value) {
 function isSameVNode(n1, n2) {
   return n1.type === n2.type && n1.key === n2.key;
 }
-function createVNode(type, props, children, patchFlag) {
+function createVNode(type, props, children, patchFlag, dynamicProps) {
   const shapeFlag = isString(type) ? 1 /* ELEMENT */ : isTeleport(type) ? 64 /* TELEPORT */ : isObject(type) ? 4 /* STATEFUL_COMPONENT */ : isFunction(type) ? 2 /* FUNCTIONAL_COMPONENT */ : 0;
   const vnode = {
     __v_isVNode: true,
@@ -711,8 +738,10 @@ function createVNode(type, props, children, patchFlag) {
     // 虚拟节点对应的真实节点
     ref: props?.ref,
     // 元素：dom元素  组件：实例/exposed
-    patchFlag
+    patchFlag,
     // 用于dom diff靶向更新
+    dynamicChildren: null,
+    dynamicProps
   };
   if (currentBlock && patchFlag > 0) {
     currentBlock.push(vnode);
@@ -741,8 +770,8 @@ function setupBlock(vnode) {
   closeBlock();
   return vnode;
 }
-function createElementBlock(type, props, children, patchFlag) {
-  const vnode = createVNode(type, props, children, patchFlag);
+function createElementBlock(type, props, children, patchFlag, dynamicProps) {
+  const vnode = createVNode(type, props, children, patchFlag, dynamicProps);
   return setupBlock(vnode);
 }
 
@@ -1209,20 +1238,37 @@ function createRenderer(renderOptions2) {
     const newProps = n2.props || {};
     const { patchFlag, dynamicChildren } = n2;
     if (patchFlag > 0) {
+      if (patchFlag & 2 /* CLASS */) {
+        if (oldProps.class !== newProps.class) {
+          hostPatchProp(el, "class", oldProps.class, newProps.class);
+        }
+      }
+      if (patchFlag & 4 /* STYLE */) {
+        hostPatchProp(el, "style", oldProps.style, newProps.style);
+      }
+      if (patchFlag & 8 /* PROPS */) {
+        const propsToUpdate = n2.dynamicProps;
+        for (let index = 0; index < propsToUpdate.length; index++) {
+          const key = propsToUpdate[index];
+          const prev = oldProps[key];
+          const next = newProps[key];
+          hostPatchProp(el, key, prev, next);
+        }
+      }
       if (patchFlag & 1 /* TEXT */) {
         if (n1.children != n2.children) {
           return hostSetElementText(n2.el, n2.children);
         }
       }
-    } else {
-      console.log("props \u5168\u91CFdiff");
+    } else if (dynamicChildren === null) {
+      logger("props \u5168\u91CFdiff", el);
       patchProps(oldProps, newProps, el);
     }
     if (dynamicChildren) {
-      console.log("\u7EBF\u6027diff");
+      logger("children: \u7EBF\u6027diff");
       patchBlockChildren(n1, n2, el, anchor, parentComponent);
     } else {
-      console.log("\u5168\u91CFdiff");
+      logger("children: \u5168\u91CFdiff.(full diff)");
       patchChildren(n1, n2, el, anchor, parentComponent);
     }
   };
@@ -1730,7 +1776,10 @@ export {
   isTeleport,
   isUndefined,
   isVNode,
+  logger,
   nextFrame,
+  normalizeClass,
+  normalizeStyle,
   objectToString,
   onBeforeMount,
   onBeforeUpdate,
