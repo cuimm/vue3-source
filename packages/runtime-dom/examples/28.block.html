@@ -36,7 +36,7 @@
 
   const MyComponent = {
     setup() {
-      const state = reactive({ name: 'Hello', tabindex: 10, class: [ 'title', {'is-disabled': true} ] });
+      const state = reactive({ name: 'Hello', tabindex: 10, class: [ 'title', { 'is-disabled': true } ] });
       const style = reactive({ color: 'red', fontSize: '29px' });
 
       setTimeout(() => {
@@ -67,14 +67,16 @@
         <span :tabindex="tabindex" :style="style" :class="class">{{name}}</span>
       </div>
       * */
-      const vnode = (_openBlock(), _createElementBlock("div", null, [
-        _createElementVNode("h1", null, "Hello"),
-        _createElementVNode("span", {
-          tabindex: _ctx.tabindex,
-          style: _normalizeStyle(_ctx.style),
-          class: _normalizeClass(_ctx.class)
-        }, _toDisplayString(_ctx.name), 15 /* TEXT, CLASS, STYLE, PROPS */, ["tabindex"])
-      ]));
+      const vnode = (
+        _openBlock(), _createElementBlock('div', null, [
+          _createElementVNode('h1', null, 'Hello'),
+          _createElementVNode('span', {
+            tabindex: _ctx.tabindex,
+            style: _normalizeStyle(_ctx.style),
+            class: _normalizeClass(_ctx.class)
+          }, _toDisplayString(_ctx.name), 15 /* TEXT, CLASS, STYLE, PROPS */, [ 'tabindex' ])
+        ])
+      );
       console.log('vnode', vnode);
       return vnode;
     }
