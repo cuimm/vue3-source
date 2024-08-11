@@ -743,7 +743,7 @@ function createVNode(type, props, children, patchFlag, dynamicProps) {
     dynamicChildren: null,
     dynamicProps
   };
-  if (currentBlock && patchFlag > 0) {
+  if (currentBlock && (patchFlag > 0 || shapeFlag & 6 /* COMPONENT */)) {
     currentBlock.push(vnode);
   }
   if (children) {
@@ -759,15 +759,21 @@ function createVNode(type, props, children, patchFlag, dynamicProps) {
   return vnode;
 }
 var currentBlock = null;
+var blockStack = [];
 function openBlock() {
   currentBlock = [];
+  blockStack.push(currentBlock);
 }
 function closeBlock() {
-  currentBlock = null;
+  blockStack.pop();
+  currentBlock = blockStack[blockStack.length - 1] || null;
 }
 function setupBlock(vnode) {
   vnode.dynamicChildren = currentBlock;
   closeBlock();
+  if (currentBlock) {
+    currentBlock.push(vnode);
+  }
   return vnode;
 }
 function createElementBlock(type, props, children, patchFlag, dynamicProps) {

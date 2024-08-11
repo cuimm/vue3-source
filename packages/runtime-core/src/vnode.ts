@@ -59,7 +59,7 @@ export function createVNode(type, props, children?, patchFlag?, dynamicProps?) {
   };
 
   // currentBlock收集有patchFlag的子节点
-  if (currentBlock && patchFlag > 0) {
+  if (currentBlock && (patchFlag > 0 || shapeFlag & ShapeFlags.COMPONENT)) {
     currentBlock.push(vnode);
   }
 
@@ -80,34 +80,46 @@ export function createVNode(type, props, children?, patchFlag?, dynamicProps?) {
 
 /**************************** DOM DIFF优化 <靶向更新> ****************************/
 /**
- * 用于收集动态虚拟子节点
+ * 用于收集动态虚拟子节点。
+ * v-if和v-for是节点结构动态变化的两种可能方式，
+ * 针对v-if分支和每个v-for片段，我们就可以将模板划分为<嵌套块>，在每个块内，节点结构将是稳定的。
+ * 这允许我们跳过大多数子节点的差异，只担心动态节点（由补丁标志表示）。
  */
 let currentBlock = null;
+const blockStack = [];
 
 export function openBlock() {
   currentBlock = [];
+  blockStack.push(currentBlock);
 }
 
 export function closeBlock() {
-  currentBlock = null;
+  blockStack.pop();
+  currentBlock = blockStack[blockStack.length - 1] || null;
 }
 
 export function setupBlock(vnode) {
   vnode.dynamicChildren = currentBlock;
   closeBlock();
+
+  // block嵌套时，收集blockTree
+  if (currentBlock) {
+    currentBlock.push(vnode);
+  }
+
   return vnode;
 }
 
 /**
- * 收集动态节点
+ * 收集动态节点。
  * @param type
  * @param props
  * @param children
  * @param patchFlag
+ * @param dynamicProps
  */
-export function createElementBlock(type, props, children?, patchFlag?, dynamicProps?) {
+export function createElementBlock(type, props, children, patchFlag, dynamicProps) {
   const vnode = createVNode(type, props, children, patchFlag, dynamicProps);
   return setupBlock(vnode);
 }
-
 export { createVNode as createElementVNode };
