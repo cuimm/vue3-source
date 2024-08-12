@@ -13,7 +13,7 @@ export function watchEffect(source, options?) {
 }
 
 
-function doWatch(source, cb, { deep, immediate } = {}) {
+function doWatch(source, cb, { deep = false, immediate = false } = {}) {
   // for deep: true：全部遍历
   // for deep: false：仅遍历根级别属性
   const reactiveGetter = source => deep === true
